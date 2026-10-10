@@ -43,7 +43,7 @@ bash run_smoke.sh
 
 This compiles C++, creates 8,192 memory rows, appends 256, compares the *original prefix SHA-256*, checks witnessed tagged state, then tests exact and 20%-corrupted retrieval. It prints **SMOKE TEST PASS** if all conditions succeed.
 
-**Optional independent comparison to original Python core:** install NumPy and run `python3 parity_check.py` after compiling; this creates an 8,192-row bank if missing, then compares five native outputs to the unmodified `HingeZero_Core.py`. `parity_results.json` holds the original measured comparisons. For a basic internal-consistency check on the archived full-bank evidence, run `python3 verify_recorded_results.py`. This checks matching IDs and outcomes across CSV, JSON and the execution log; it does **not** replace an independent rerun.
+**Optional independent comparison to original Python core:** install NumPy and run `python3 parity_check.py` after compiling; this creates an 8,192-row bank if missing, then compares five native outputs to the unmodified `HingeZero_Core.py`. Running this script writes `parity_results.json` with the five numerical comparison results. For a basic internal-consistency check on the archived full-bank evidence, run `python3 verify_recorded_results.py`. This checks the recorded CSV's case count, witness flags and success count; it does **not** replace an independent rerun.
 
 ## Full billion-memory reproduction
 
@@ -56,7 +56,7 @@ bash run_1b.sh /path/to/fast/disk/hz_1b_bank.bin
 
 `run_1b.sh` writes `reproduced_1b_run.log` in the kit folder. It generates the bank with deterministic seed and ID mapping, verifies old-prefix hash after append, then executes the two targets across all six cue regimes. The 16 GB bank remains wherever you asked it to be written; delete it manually when finished.
 
-Expected per-case selected indices and measurements from the original run appear in `billion_results.csv`, `billion_results.json` and `billion_run_log.txt`. Compare your output against those files. Timing will vary. The reference bank prefix hash should match on the same little-endian representation.
+Expected per-case selected indices and measurements from the original run appear in `billion_results.csv` and `HingeZero_Cpp20_1B_Report.md`. Compare your output against those files. Timing will vary. The reference bank prefix hash should match on the same little-endian representation.
 
 ## Files
 
@@ -66,10 +66,8 @@ Expected per-case selected indices and measurements from the original run appear
 - `run_1b.sh` — portable, 900M+100M bank generation and twelve native full scans.
 - `parity_check.py` — optional Python/NumPy numerical comparison.
 - `SEALED_BENCHMARK.md` — protocol recorded before the final run.
-- `billion_results.csv`, `billion_results.json`, `billion_run_log.txt` — measured outputs.
+- `billion_results.csv` — measured case-level outputs (including failures).
 - `HingeZero_Cpp20_1B_Report.md` — full explanation and scope.
-- `SMOKE_TEST_RESULT.txt` — this package's own smoke run.
-- `PARITY_VERIFICATION_RUN.txt` — rerun against original Python core (requires NumPy).
 - `verify_recorded_results.py` — independently cross-check reported CSV, JSON and run-log values.
 - Use `git` commit history and the recorded benchmark logs to inspect revisions.
 
