@@ -1,0 +1,13 @@
+target,regime,selected,correct,witness,refine_ms,scan_ms,ablation
+417,exact,417,True,True,0.265121,7195.169,False
+417,flip20,417,True,True,0.240375,6829.4692,False
+417,flip35,56455943,False,True,0.259433,6879.1116,False
+417,missing50,417,True,True,0.241597,7297.9855,False
+417,severe,332214050,False,True,0.241467,7024.4826,False
+417,multi4,417,True,True,0.240926,6883.5971,False
+777777777,exact,777777777,True,True,0.243329,7087.4878,False
+777777777,flip20,777777777,True,True,0.268196,7067.6038,False
+777777777,flip35,190998103,False,True,0.241497,7713.7341,False
+777777777,missing50,777777777,True,True,0.264621,6880.2329,False
+777777777,severe,697768560,False,True,0.242198,7000.4087,False
+777777777,multi4,777777777,True,True,0.24365,7129.8388,False
