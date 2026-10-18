@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "hingezero-secure-memory"
 version = "0.1.0"
 description = "Local-first, witness-verified associative memory with encrypted storage and capability-scoped access"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{name = "David Duffy"}]
 dependencies = ["numpy>=1.26,<3", "cryptography>=50.0.2,<51"]
 keywords = ["associative-memory", "privacy", "local", "hingezero"]
