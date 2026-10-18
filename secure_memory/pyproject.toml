@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=83", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hingezero-secure-memory"
+version = "0.1.0"
+description = "Local-first, witness-verified associative memory with encrypted storage and capability-scoped access"
+requires-python = ">=3.11"
+authors = [{name = "David Duffy"}]
+dependencies = ["numpy>=1.26,<3", "cryptography>=50.0.2,<51"]
+keywords = ["associative-memory", "privacy", "local", "hingezero"]
+license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
+classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Topic :: Security :: Cryptography"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.28,<2"]
+dev = ["pytest>=8,<10", "bandit>=1.8,<2", "pip-audit>=2.8,<3"]
+
+[project.scripts]
+hzm = "hingezero_secure_memory.cli:main"
+hzm-mcp = "hingezero_secure_memory.mcp_server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["HingeZero_Core"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
