@@ -8,7 +8,7 @@ Local-first deterministic associative memory for AI applications, by **David Duf
 
 ## Installation
 
-Clone this repository and enter the secure_memory directory. Requires Python 3.10+; Linux and macOS are the current local evaluation targets.
+Clone this repository and enter the secure_memory directory. Requires Python 3.11+; Linux and macOS are the current local evaluation targets.
 
 ```bash
 python -m venv .venv
