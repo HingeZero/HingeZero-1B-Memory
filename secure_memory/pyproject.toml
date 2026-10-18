@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Local-first, witness-verified associative memory with encrypted storage and capability-scoped access"
 requires-python = ">=3.10"
 authors = [{name = "David Duffy"}]
-dependencies = ["numpy>=1.26,<3", "cryptography>=44,<48"]
+dependencies = ["numpy>=1.26,<3", "cryptography>=50.0.2,<51"]
 keywords = ["associative-memory", "privacy", "local", "hingezero"]
 license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
 classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Topic :: Security :: Cryptography"]
