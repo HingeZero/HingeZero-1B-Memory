@@ -1,0 +1,85 @@
+name: HingeZero genuine associative retrieval (zero steps)
+
+on:
+  push:
+    branches: [research/one-trillion-implicit-retrieval-20261029]
+    paths:
+      - research/zero_step_content_index.cpp
+      - .github/workflows/genuine-associative-zero-step.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  physical-content-retrieval:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        records: [1000000, 10000000, 100000000]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Compile content-index retrieval, with original core unmodified
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          sha256sum HingeZero_Native_1B.cpp | tee results/original_source_sha256.txt
+          g++ -O3 -std=c++20 -Wall -Wextra research/zero_step_content_index.cpp -o hz_content
+      - name: Measure 0-step retrieval over physically stored records
+        shell: bash
+        run: |
+          set -euo pipefail
+          df -h .
+          free -h
+          ./hz_content ${{ matrix.records }} physical_bank_${{ matrix.records }}.bin | tee results/raw.jsonl
+          rm physical_bank_${{ matrix.records }}.bin
+      - name: Summarise results with scope verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,statistics
+          from pathlib import Path
+          rows=[json.loads(line) for line in Path("results/raw.jsonl").read_text().splitlines()]
+          setup=rows[0]
+          assert setup["type"]=="setup"
+          assert setup["inverse_id_lookup"] is False
+          assert setup["steps"]==0
+          assert setup["bytes"]==16*setup["physical_memories"]
+          qs=rows[1:]
+          assert len(qs)==10
+          assert all(x["physical_memories"]==setup["physical_memories"] for x in qs)
+          assert all(x["correct"] for x in qs if x["cue"]=="exact")
+          assert all(x["witness"] for x in qs if x["found"])
+          report=["# Genuine associative retrieval (zero steps)", "",
+                  "**Not one trillion physically stored or searched memories.**",
+                  "All queries are made from content alone, never encoded record ID.",
+                  f'Physical bank: {setup["physical_memories"]:,} 128-bit random records.',
+                  "Index: 8 × 16-bit content buckets; search ranks full 128-bit cue mismatches.",
+                  "Correct means exact intended identity; witness means returned bank record intact.",
+                  "Eight-known-bit queries abstain because they cannot identify a unique memory.",
+                  "",
+                  "| Cue | Correct | Found | Candidates inspected | Query ms |",
+                  "|---|---|---|---:|---:|"]
+          for cue in ("exact","flip20","flip35","missing50","eight_known"):
+              selected=[r for r in qs if r["cue"]==cue]
+              assert len(selected)==2
+              report.append(f'| {cue} | {sum(r["correct"] for r in selected)}/2 | {sum(r["found"] for r in selected)}/2 | {round(statistics.median(r["candidate_inspections"] for r in selected)):,} | {statistics.median(r["search_ms"] for r in selected):.3f} |')
+          result="\n".join(report)+"\n"
+          print(result)
+          Path("results/summary.md").write_text(result)
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f: f.write(result)
+          PY
+      - name: Store raw records and result summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine-associative-${{ matrix.records }}-results
+          path: results/
+          if-no-files-found: warn
+          retention-days: 14
