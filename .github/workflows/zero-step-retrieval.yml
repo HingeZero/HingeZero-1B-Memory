@@ -1,0 +1,120 @@
+name: HingeZero zero-step retrieval comparison
+
+on:
+  push:
+    branches:
+      - research/zero-step-retrieval-20261029
+    paths:
+      - .github/workflows/zero-step-retrieval.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-retrieval:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out HingeZero code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compile unchanged 8-step and exact zero-step variant
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          sha256sum HingeZero_Native_1B.cpp | tee results/unchanged_original_sha256.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          original = Path("HingeZero_Native_1B.cpp").read_text()
+          needle = "constexpr int D=128, FIELD=256, STEPS=8;"
+          assert original.count(needle) == 1, "unexpected core version, refusing substitution"
+          modified = original.replace(needle, "constexpr int D=128, FIELD=256, STEPS=0;")
+          assert modified.replace("constexpr int D=128, FIELD=256, STEPS=0;", needle) == original
+          Path("HingeZero_0_Steps_generated.cpp").write_text(modified)
+          PY
+          g++ -O3 -std=c++20 HingeZero_Native_1B.cpp -o hz8
+          g++ -O3 -std=c++20 HingeZero_0_Steps_generated.cpp -o hz0
+          sha256sum HingeZero_0_Steps_generated.cpp | tee results/zero_step_generated_sha256.txt
+
+      - name: Run identical cues against 1M and 100M physical records
+        run: |
+          set -euo pipefail
+          for count in 1000000 100000000; do
+            required=$((count * 16 + 1073741824))
+            available=$(df -PB1 . | awk 'NR==2 {print $4}')
+            if (( available < required )); then
+              echo "Insufficient available disk for $count physical memories" >&2
+              exit 1
+            fi
+            bank="bank_$count.bin"
+            ./hz8 create "$bank" "$count" | tee -a results/generation.jsonl
+            for target in 417 $((count - 1)); do
+              for regime in exact flip20 flip35 missing50 severe multi4; do
+                for steps in 0 8; do
+                  ./hz$steps test "$bank" "$count" "$target" "$regime" \
+                    | python3 -c 'import json,sys; r=json.load(sys.stdin);r["steps"]=int(sys.argv[1]);print(json.dumps(r))' "$steps" \
+                    | tee -a results/retrieval.jsonl
+                done
+              done
+            done
+            rm "$bank"
+          done
+
+      - name: Summarise zero-step versus 8-step measured results
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import statistics
+          from pathlib import Path
+          rows=[json.loads(line) for line in Path("results/retrieval.jsonl").read_text().splitlines()]
+          assert len(rows)==48, len(rows)
+          assert {r["load"] for r in rows}=={1000000,100000000}
+          assert {r["steps"] for r in rows}=={0,8}
+          assert all(r["witness"] for r in rows), "returned memory failed exact state witness"
+          output=["# HingeZero zero-step retrieval comparison", "",
+                  "Physical banks: 1,000,000 and 100,000,000 memories at 128 bits each.",
+                  "The zero-step engine differs from the unchanged original C++20 engine by only STEPS=0.",
+                  "Both engines perform the same full-bank scan and exact stored-state witness.",
+                  "This is NOT trillion-memory retrieval; 1 trillion physical memories require 16 TB before indexing.", "",
+                  "| Stored records | Steps | Correct target IDs | Median scan (ms) | Median refinement (ms) |",
+                  "|---:|---:|---:|---:|---:|"]
+          summary={"total_queries":len(rows), "all_witnesses":True, "groups":[]}
+          for count in (1000000,100000000):
+              for steps in (0,8):
+                  selected=[r for r in rows if r["load"]==count and r["steps"]==steps]
+                  assert len(selected)==12
+                  group={"physical_records":count, "steps":steps,"correct":sum(r["correct"] for r in selected),
+                         "tested":len(selected),"median_scan_ms":statistics.median(r["scan_ms"] for r in selected),
+                         "median_refine_ms":statistics.median(r["refine_ms"] for r in selected)}
+                  summary["groups"].append(group)
+                  output.append(f'| {count:,} | {steps} | {group["correct"]}/12 | {group["median_scan_ms"]:.3f} | {group["median_refine_ms"]:.4f} |')
+          output.extend(["", "Cue-by-cue:", "",
+                         "| Stored records | Cue | Zero steps correct | Eight steps correct |",
+                         "|---:|---|---:|---:|"])
+          for count in (1000000,100000000):
+              for regime in ("exact","flip20","flip35","missing50","severe","multi4"):
+                  c=[]
+                  for steps in (0,8):
+                      selected=[r for r in rows if r["load"]==count and r["steps"]==steps and r["regime"]==regime]
+                      assert len(selected)==2
+                      c.append(sum(r["correct"] for r in selected))
+                  output.append(f"| {count:,} | {regime} | {c[0]}/2 | {c[1]}/2 |")
+          text="\n".join(output)+"\n"
+          Path("results/summary.md").write_text(text)
+          Path("results/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(text)
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f: f.write(text)
+          PY
+
+      - name: Upload measured records and summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hingezero-0-vs-8-step-results
+          path: results/
+          if-no-files-found: warn
+          retention-days: 14
