@@ -1,0 +1,123 @@
+name: HingeZero native scaling research (up to 100M physical)
+
+on:
+  push:
+    branches:
+      - research/trillion-scale-run-20261029
+    paths:
+      - .github/workflows/trillion-scale-research.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-scaling:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out unchanged HingeZero 1B core
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compile the original native engine
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          sha256sum HingeZero_Native_1B.cpp | tee results/core_sha256.txt
+          g++ -O3 -std=c++20 HingeZero_Native_1B.cpp -o hz_native
+
+      - name: Check 1 trillion ID address arithmetic (not stored memories)
+        run: |
+          set -euo pipefail
+          cat > trillion_id_probe.cpp <<'CPP'
+          #define main hingezero_original_main
+          #include "HingeZero_Native_1B.cpp"
+          #undef main
+          int main() {
+            constexpr uint64_t COUNT = 1000000000000ULL;
+            constexpr uint64_t LAST = COUNT - 1;
+            static_assert(COUNT < UINT64_MAX / sizeof(Pattern));
+            const auto first = pattern(0);
+            const auto penultimate = pattern(LAST-1);
+            const auto last = pattern(LAST);
+            if ((last.lo == penultimate.lo && last.hi == penultimate.hi)
+                || (last.lo == first.lo && last.hi == first.hi)) return 1;
+            cout << "{\"logical_ids\":" << COUNT
+                 << ",\"last_id\":" << LAST
+                 << ",\"theoretical_bytes\":" << COUNT*sizeof(Pattern)
+                 << ",\"physical_records_tested\":0"
+                 << ",\"note\":\"ID arithmetic and deterministic pattern only\"}\n";
+          }
+          CPP
+          g++ -O2 -std=c++20 -I. trillion_id_probe.cpp -o trillion_id_probe
+          ./trillion_id_probe | tee results/trillion_id_probe.jsonl
+          rm trillion_id_probe.cpp trillion_id_probe
+
+      - name: Physically store and retrieve 1M and 100M packed memories
+        run: |
+          set -euo pipefail
+          for count in 1000000 100000000; do
+            required=$((count * 16 + 1073741824))
+            available=$(df -PB1 . | awk 'NR==2 {print $4}')
+            if (( available < required )); then
+              echo "Insufficient GitHub runner disk for $count records" >&2
+              exit 1
+            fi
+            bank="bank_${count}.bin"
+            ./hz_native create "$bank" "$count" | tee -a results/generation.jsonl
+            for target in 417 $((count - 1)); do
+              for regime in exact flip20 flip35 missing50 severe multi4; do
+                ./hz_native test "$bank" "$count" "$target" "$regime" | tee -a results/retrieval.jsonl
+              done
+            done
+            rm "$bank"
+          done
+
+      - name: Validate and summarise actual retrieval results
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections, json, os
+          from pathlib import Path
+          rows = [json.loads(line) for line in Path("results/retrieval.jsonl").read_text().splitlines()]
+          assert len(rows) == 24, f"expected 24 retrievals, got {len(rows)}"
+          assert all(r["witness"] for r in rows), "a returned state failed the exact witness"
+          assert {r["load"] for r in rows} == {1_000_000, 100_000_000}
+          summary = {"physical_retrievals": len(rows), "all_witnesses": True, "by_size_regime": {}}
+          for size in (1_000_000, 100_000_000):
+              for regime in ("exact", "flip20", "flip35", "missing50", "severe", "multi4"):
+                  subset = [r for r in rows if r["load"] == size and r["regime"] == regime]
+                  assert len(subset) == 2
+                  summary["by_size_regime"][f"{size}:{regime}"] = {
+                      "correct": sum(r["correct"] for r in subset),
+                      "tested": len(subset),
+                      "scan_ms": [round(r["scan_ms"], 3) for r in subset],
+                      "refine_ms": [round(r["refine_ms"], 4) for r in subset]
+                  }
+          Path("results/summary.json").write_text(json.dumps(summary, indent=2)+"\n")
+          report = ["# HingeZero GitHub-native scaling run", "",
+                    "1 trillion: logical 64-bit ID boundary probe only. NOT 1 trillion physically stored memories.",
+                    "Physical banks: 1 million and 100 million packed 128-bit patterns, using the unchanged C++20 core.",
+                    "Witness: exact stored-state membership, not correct cue identity.", "",
+                    "| Physical records | Cue | Correct IDs | Scan times (ms) |",
+                    "|---:|---|---:|---|"]
+          for size in (1_000_000, 100_000_000):
+              for regime in ("exact", "flip20", "flip35", "missing50", "severe", "multi4"):
+                  row=summary["by_size_regime"][f"{size}:{regime}"]
+                  report.append(f'| {size:,} | {regime} | {row["correct"]}/2 | {", ".join(map(str,row["scan_ms"]))} |')
+          summary_text="\n".join(report)+"\n"
+          print(summary_text)
+          Path("results/summary.md").write_text(summary_text)
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f: f.write(summary_text)
+          PY
+
+      - name: Upload raw logs and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hingezero-native-scaling-research-results
+          path: results/
+          if-no-files-found: warn
+          retention-days: 14
