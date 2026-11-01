@@ -45,3 +45,11 @@ Prompts explicitly label retrieved memory as untrusted data. That reduces but do
 ## Report a security bug
 
 Please contact the repository owner privately, rather than publishing an exploit with user-data exposure. Avoid submitting real personal data into GitHub issues.
+
+## Automated security verification for v0.1.1
+
+- GitHub Actions executes unit/regression tests, HingeZero self-check, Bandit static Python security analysis, and pip-audit on runtime and build requirements before packaging.
+- GitHub CodeQL scans Python and Actions workflows weekly and on pushes to the desktop release branch; findings should be reviewed on GitHub's Security tab. A successful CodeQL run does not imply zero alerts.
+- The encrypted backup implementation reserves output atomically with owner-only permissions and preserves permissions of user-selected backup folders.
+- DOCX XML parsing uses defusedxml to reject entity expansion.
+- Public binaries are **not signed, notarized or independently penetration-tested**. No malware-scanning certificate is claimed.

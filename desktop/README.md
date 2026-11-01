@@ -1,4 +1,4 @@
-# HingeZero Memory Desktop v0.1.0
+# HingeZero Memory Desktop v0.1.1
 
 **Private, offline-first memory vault with deterministic associative retrieval.**  
 A standalone desktop integration package for HingeZero Memory, built around the dual-tanh memory operator.
@@ -13,7 +13,7 @@ A standalone desktop integration package for HingeZero Memory, built around the 
 
 **Permissions:** The application never asks for administrator privileges, does not scan your files, uses no analytics or telemetry, and only imports files you select. It writes its encrypted vault under `~/HingeZeroMemory/vault.sqlite3` (your home directory). The local API and Ollama connection are off until you turn them on. It does **not** modify or inject itself into other AI programs.
 
-**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.0; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
+**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.1; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
 
 ## What it does
 
@@ -92,4 +92,8 @@ The provided GitHub Actions workflow builds Windows, Linux and macOS standalone 
 
 This is a new *desktop integration* around the HingeZero operator, not the full 1-billion-record disk-scanning research demonstration. The user-friendly app currently stores up to 20,000 encrypted memory chunks with a linear in-memory candidate search. It is not a substitute for the billion-record C++ engine or a production multi-tenant server.
 
-**License:** No redistribution license is included in this draft. The repository owner should choose the software license and confirm any packaging/release terms before publishing for public reuse. Source accessibility alone is not an open-source license.
+**License:** No redistribution license has yet been chosen. The repository owner should choose the software license and confirm any packaging/release terms before publishing for public reuse. Source accessibility alone is not an open-source license.
+
+## Verification status (v0.1.1)
+
+The release pipeline gates downloads behind tests, dependency audits (runtime **and** build-time) and Python Bandit security analysis. GitHub CodeQL analyzes Python and workflows separately. The checks cannot prove absence of security flaws, and unsigned binaries may be blocked by Windows/macOS. The software source is public, but commercial/open-source redistribution rights require the copyright owner's explicit choice of licence.

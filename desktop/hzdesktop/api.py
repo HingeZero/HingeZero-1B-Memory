@@ -19,6 +19,10 @@ class LocalAPI:
         parent = self
 
         class Handler(BaseHTTPRequestHandler):
+            def setup(self):
+                super().setup()
+                self.connection.settimeout(5)
+
             def log_message(self, *args):
                 pass  # Do not log private queries or tokens.
 

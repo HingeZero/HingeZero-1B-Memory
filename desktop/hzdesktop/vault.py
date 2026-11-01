@@ -29,9 +29,11 @@ def _derive(password: str, salt: bytes) -> bytes:
                      salt=salt, iterations=ITERATIONS).derive(password.encode("utf-8"))
 
 
-def _private_dir(path: Path) -> None:
+def _private_dir(path: Path, restrict_existing: bool = True) -> None:
+    existed = path.exists()
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if os.name == "posix":
+    # The app owns its vault directory, but not an arbitrary folder chosen for backups.
+    if os.name == "posix" and (restrict_existing or not existed):
         os.chmod(path, 0o700)
 
 
@@ -144,7 +146,11 @@ class Vault:
             raise ValueError("Backup destination must differ from active vault")
         if dest.exists():
             raise FileExistsError("Refusing to overwrite an existing backup")
-        _private_dir(dest.parent)
+        # Never change permissions of a directory picked by the user.
+        _private_dir(dest.parent, restrict_existing=False)
+        # Atomically reserve the output using owner-only mode; never follow a symlink.
+        fd = os.open(dest, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+        os.close(fd)
         try:
             with sqlite3.connect(dest) as output:
                 self.db.backup(output)

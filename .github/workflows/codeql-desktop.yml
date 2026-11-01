@@ -1,0 +1,27 @@
+name: CodeQL security analysis — HingeZero Memory Desktop
+
+on:
+  push:
+    branches: [desktop-release-v0.1.0]
+  workflow_dispatch:
+  schedule:
+    - cron: '12 7 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Python and workflows analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python,actions
+          queries: security-extended
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4

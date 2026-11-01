@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 import re
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 from zipfile import ZipFile, BadZipFile
 
 MAX_FILE_BYTES = 8 * 1024 * 1024

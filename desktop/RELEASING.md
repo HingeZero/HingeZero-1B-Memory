@@ -10,11 +10,11 @@
 
 ## Automated release
 
-When the desktop branch is published, its CI also attempts to create a `desktop-v0.1.0` release automatically. If that does not run or fails, push an annotated version tag to build manually:
+When the desktop branch is published, its CI also attempts to create a `desktop-v0.1.1` release automatically. If that does not run or fails, push an annotated version tag to build manually:
 
 ```bash
-git tag -a v0.1.0 -m 'HingeZero Memory Desktop v0.1.0'
-git push origin v0.1.0
+git tag -a v0.1.1 -m 'HingeZero Memory Desktop v0.1.1'
+git push origin v0.1.1
 ```
 
 The `.github/workflows/release.yml` workflow runs tests and a dependency audit, builds the desktop app on Windows, Linux and macOS, attaches archives to a GitHub Release and emits `SHA256SUMS.txt` for download verification. The workflow does not automatically sign binaries or notarize macOS packages.
@@ -22,9 +22,9 @@ The `.github/workflows/release.yml` workflow runs tests and a dependency audit, 
 If you are using the **separate release branch**, tag that branch commit, not the research/main branch:
 
 ```bash
-git switch desktop-release-v0.1.0
-git tag -a v0.1.0 -m 'HingeZero Memory Desktop v0.1.0'
-git push origin v0.1.0
+git switch desktop-release-v0.1.1
+git tag -a v0.1.1 -m 'HingeZero Memory Desktop v0.1.1'
+git push origin v0.1.1
 ```
 
 GitHub Releases are repository-wide. A cleaner future setup is a dedicated `HingeZero-Memory-Desktop` repository, if available. No existing benchmark files need to be overwritten.
