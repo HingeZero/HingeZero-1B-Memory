@@ -43,7 +43,7 @@ bash run_smoke.sh
 
 This compiles C++, creates 8,192 memory rows, appends 256, compares the *original prefix SHA-256*, checks witnessed tagged state, then tests exact and 20%-corrupted retrieval. It prints **SMOKE TEST PASS** if all conditions succeed.
 
-**Optional independent comparison to original Python core:** install NumPy and run `python3 parity_check.py` after compiling; this creates an 8,192-row bank if missing, then compares five native outputs to the unmodified `HingeZero_Core.py`. Running this script writes `parity_results.json` with the five numerical comparison results. For a basic internal-consistency check on the archived full-bank evidence, run `python3 verify_recorded_results.py`. This checks the recorded CSV's case count, witness flags and success count; it does **not** replace an independent rerun.
+**Optional independent comparison to original Python core:** install NumPy and run `python3 parity_check.py` after compiling; this creates an 8,192-row bank if missing, then compares five native outputs to the unmodified `HingeZero_Core.py`. Running this script writes `parity_results.json` with the five numerical comparison results. For a basic internal-consistency check on the archived full-bank evidence, run `python3 verify_recorded_results.py`. This checks the recorded CSV's case count, witness flags and success count only; it does **not** verify JSON logs or replace an independent billion-record rerun.
 
 ## Full billion-memory reproduction
 

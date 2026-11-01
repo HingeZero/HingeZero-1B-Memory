@@ -122,4 +122,4 @@ jobs:
           fi
           gh release create "$TAG" release-assets/* \
             --target "$GITHUB_SHA" --title "HingeZero Memory Desktop $TAG" \
-            --notes 'HingeZero Memory Desktop v0.1.2. Free permitted noncommercial use under PolyForm Noncommercial 1.0.0; paid separate agreement for commercial use. Licence and required notice are inside each archive. This scope is limited to desktop/ software; research files elsewhere in the repository are not relicensed. Unsigned preview binaries; verify SHA256SUMS.txt before use.'
+            --notes "HingeZero Memory Desktop ${TAG}. Free permitted noncommercial use under PolyForm Noncommercial 1.0.0; paid separate agreement for commercial use. Licence and required notice are inside each archive. This scope is limited to desktop/ software; research files elsewhere in the repository are not relicensed. Unsigned preview binaries; verify SHA256SUMS.txt before use."
