@@ -24,7 +24,9 @@ def _records():
 
 def test_original_core_exact_git_blob_unchanged():
     original = Path(__file__).parents[1] / "hzdesktop" / "HingeZero_Core.py"
-    data = original.read_bytes()
+    # Git checks out LF blobs as CRLF on Windows. Compare canonical Git
+    # content, not platform-specific working-tree line endings.
+    data = original.read_bytes().replace(b"\r\n", b"\n")
     digest = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\x00" + data).hexdigest()
     assert digest == "ec0ec9c56c233b97038d88618ad9f2bcff26bcab"
     assert HZ_STEPS == 8
