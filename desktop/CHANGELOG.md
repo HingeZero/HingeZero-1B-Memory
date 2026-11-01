@@ -1,5 +1,14 @@
 # HingeZero Memory Desktop release notes
 
+## v0.1.5 — local ChatGPT bridge
+
+- Added optional MCP stdio bridge with read-only memory_search tool.
+- Added an independently generated read-only API token; write requests with that token return HTTP 403.
+- Kept existing original HingeZero Core and Witness in desktop retrieval.
+- Added functional and permission tests for the bridge.
+- Bridge must be connected by an eligible user through Secure MCP Tunnel; it is not automatically linked to ChatGPT.
+- Tool results share selected saved notes with ChatGPT; no automatic note capture.
+
 ## v0.1.4 — original-core integration
 
 - Integrated the **unchanged original HingeZero Core** (source blob `ec0ec9c56c233b97038d88618ad9f2bcff26bcab`) into desktop retrieval.

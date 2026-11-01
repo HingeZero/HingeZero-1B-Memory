@@ -1,4 +1,4 @@
-# HingeZero Memory Desktop v0.1.4
+# HingeZero Memory Desktop v0.1.5
 
 **Private, offline-first memory vault with deterministic associative retrieval.**  
 A standalone desktop integration package for HingeZero Memory, built around the dual-tanh memory operator.
@@ -13,7 +13,7 @@ A standalone desktop integration package for HingeZero Memory, built around the 
 
 **Permissions:** The application never asks for administrator privileges, does not scan your files, uses no analytics or telemetry, and only imports files you select. It writes its encrypted vault under `~/HingeZeroMemory/vault.sqlite3` (your home directory). The local API and Ollama connection are off until you turn them on. It does **not** modify or inject itself into other AI programs.
 
-**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.4; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
+**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.5; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
 
 ## What it does
 
@@ -104,7 +104,7 @@ This is a new *desktop integration* around the HingeZero operator, not the full 
 
 **Licence:** See [LICENSE.md](LICENSE.md), [NOTICE.txt](NOTICE.txt), and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md). PolyForm Noncommercial is **source-available, not an OSI-approved open-source licence**. A separate paid written agreement is needed for commercial use.
 
-## Verification status (v0.1.4)
+## Verification status (v0.1.5)
 
 The release pipeline gates downloads behind tests, dependency audits (runtime **and** build-time) and Python Bandit security analysis. GitHub CodeQL analyzes Python and workflows separately. The checks cannot prove absence of security flaws, and unsigned binaries may be blocked by Windows/macOS. The software source is public, but commercial/open-source redistribution rights require the copyright owner's explicit choice of licence.
 
@@ -116,9 +116,13 @@ The release pipeline gates downloads behind tests, dependency audits (runtime **
 - Existing v0.1.2 encrypted vaults use the same schema and can be opened with the same passphrase. No import or migration step is required.
 
 
-## Core integration in v0.1.4
+## Core integration in v0.1.5
 
 **Source fidelity:** The original `HingeZero_Core.py` (Git blob `ec0ec9c56c233b97038d88618ad9f2bcff26bcab`) is bundled **byte-for-byte unchanged** as `hzdesktop/HingeZero_Core.py`. Desktop retrieval calls its `HingeZeroWitness.refine()`, `observe()` and `verify()`; repeated desktop searches use `HingeZeroRetainingLoop` to maintain a session-local checkpoint with rollback under drift. Checkpoints reset when candidates change and are **not** persisted through restarts.
 
 **Limits:** The desktop still uses a lexical/optional local embedding shortlist (maximum 256 candidates) and a local encrypted store (20,000 records). This is not the separate one-billion-bipolar-pattern C++ backend. Benchmarks of that backend or other HingeZero configurations are **not desktop performance measurements**. Witness verification checks stored-state identity, not memory correctness or the intended answer. There is no general-purpose semantic understanding without a separately enabled embedding model.
 
+
+## ChatGPT MCP bridge (v0.1.5)
+
+Optional separate HZMemory-ChatGPT-Bridge.zip provides a **read-only** MCP stdio server through OpenAI Secure MCP Tunnel. The desktop application now displays independent read-only and full-access local tokens. Never share the full-access token with the bridge. **Not automatically connected to ChatGPT**: requires eligible account/workspace permissions, a configured local tunnel, and an unlocked desktop vault. A retrieved note is sent to ChatGPT if the user invokes the search tool. See [bridge setup](chatgpt-bridge/README.md).

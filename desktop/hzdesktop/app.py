@@ -149,7 +149,7 @@ class MemoryApp:
                     "Never share the token. Stop it when not needed."), wraplength=680).pack(anchor="w", pady=6)
         self.api_btn = ttk.Button(settings_tab, text="Start local API (consent required)", command=self.toggle_api)
         self.api_btn.pack(anchor="w", pady=8)
-        self.api_info = tk.Text(settings_tab, height=5, wrap="word", state="disabled")
+        self.api_info = tk.Text(settings_tab, height=8, wrap="word", state="disabled")
         self.api_info.pack(fill="x")
         ttk.Label(self.root, textvariable=self.status, relief="sunken", anchor="w", padding=5).pack(fill="x", padx=10, pady=(0, 6))
 
@@ -323,13 +323,15 @@ class MemoryApp:
             self.set_text(self.api_info, "Stopped. Access token revoked.")
             return
         if not messagebox.askyesno("Enable local memory API",
-              "Other programs on this computer can retrieve or add vault memories IF they know the session token. "
+              "The ChatGPT read-only token can only search; the separate full-access token permits writes. "
               "Use only with programs you trust. Start the API?", parent=self.root):
             return
         self.api = LocalAPI(self.vault)
         self.api_btn.configure(text="Stop local API")
         self.set_text(self.api_info, f"API: http://127.0.0.1:{self.api.port}\n"
-              f"Session token (keep private): {self.api.token}\nPOST /v1/search or POST /v1/remember. Bearer token required.\n"
+              f"READ-ONLY ChatGPT token: {self.api.read_token}\n"
+              f"FULL-ACCESS token (do NOT give to ChatGPT): {self.api.token}\n"
+              "Read-only: POST /v1/search. Full-access: /v1/search or /v1/remember.\n"
               "Close the app to revoke access.")
 
     def work(self, operation, finish):
