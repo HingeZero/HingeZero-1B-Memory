@@ -34,7 +34,9 @@ def _private_dir(path: Path, restrict_existing: bool = True) -> None:
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     # The app owns its vault directory, but not an arbitrary folder chosen for backups.
     if os.name == "posix" and (restrict_existing or not existed):
-        os.chmod(path, 0o700)
+        # 0700 is required for a private DIRECTORY: only its owner may traverse it.
+        # Semgrep rule incorrectly suggests 0644 (file permissions) for directories.
+        os.chmod(path, 0o700)  # nosemgrep: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions
 
 
 def _private_file(path: Path) -> None:
