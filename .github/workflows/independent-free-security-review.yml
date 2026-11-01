@@ -6,6 +6,10 @@ on:
       - desktop-license-v0.1.2
     paths:
       - 'desktop/**'
+      - 'secure_memory/**'
+      - 'HingeZero_*.py'
+      - 'parity_check.py'
+      - 'verify_recorded_results.py'
       - '.github/workflows/independent-free-security-review.yml'
   workflow_dispatch:
 
@@ -24,7 +28,7 @@ jobs:
           python-version: '3.12'
       - name: Install free Semgrep Community Edition
         run: python -m pip install --disable-pip-version-check 'semgrep>=1.100,<3'
-      - name: Independently scan the application Python code
+      - name: Independently scan all repository Python application and research code
         run: |
           semgrep scan \
             --config p/security-audit \
@@ -33,7 +37,7 @@ jobs:
             --error \
             --json \
             --output semgrep-report.json \
-            desktop/hzdesktop desktop/launcher.py
+            desktop/hzdesktop desktop/launcher.py secure_memory/src HingeZero_Core.py parity_check.py verify_recorded_results.py
       - name: Save scan results
         if: always()
         uses: actions/upload-artifact@v4
@@ -56,5 +60,5 @@ jobs:
           go-version: 'stable'
       - name: Install free Gitleaks open-source CLI (no paid action)
         run: go install github.com/zricethezav/gitleaks/v8@v8.30.1
-      - name: Scan desktop application for hardcoded secrets
-        run: '"$(go env GOPATH)/bin/gitleaks" dir desktop --redact --no-banner'
+      - name: Scan entire repository for hardcoded secrets
+        run: '"$(go env GOPATH)/bin/gitleaks" dir . --redact --no-banner'
