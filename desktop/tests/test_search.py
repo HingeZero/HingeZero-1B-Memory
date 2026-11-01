@@ -91,9 +91,15 @@ def test_retaining_loop_rollback_on_strong_disturbance():
 
 def test_new_bank_resets_retention():
     session = RetainedMemorySession()
-    search(_records(), "dentist appointment", session=session)
+    rows = [
+        {"id": "1", "title": "Project", "content": "project alpha"},
+        {"id": "2", "title": "Project", "content": "project beta"},
+    ]
+    search(rows, "project", session=session)
+    assert len(session._signature[0]) == 2
     previous = session._loop
-    search([_records()[0]], "dentist appointment", session=session)
+    search(rows[:1], "project", session=session)
+    assert len(session._signature[0]) == 1
     assert session._loop is not previous
 
 
