@@ -12,6 +12,9 @@ def test_backup_preserves_user_directory_permissions(tmp_path):
     directory = tmp_path / 'my-shared-backups'
     directory.mkdir(mode=0o755)
     if os.name == 'posix':
+        # This *test fixture* deliberately simulates an existing shared directory.
+        # The encrypted backup must stay 0600 and must never chmod this parent.
+        # codeql[py/overly-permissive-file]
         os.chmod(directory, 0o755)
     with Vault(tmp_path / 'appvault' / 'vault.sqlite3', 'long-and-unique-passphrase', create=True) as vault:
         vault.add('test', 'secret memory')
