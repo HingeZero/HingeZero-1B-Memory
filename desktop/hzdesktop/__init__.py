@@ -1,2 +1,2 @@
 """HingeZero Memory Desktop. Offline, user-controlled personal memory vault."""
-__version__ = "0.1.2"
+__version__ = "0.1.3"

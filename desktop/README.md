@@ -1,4 +1,4 @@
-# HingeZero Memory Desktop v0.1.2
+# HingeZero Memory Desktop v0.1.3
 
 **Private, offline-first memory vault with deterministic associative retrieval.**  
 A standalone desktop integration package for HingeZero Memory, built around the dual-tanh memory operator.
@@ -13,7 +13,7 @@ A standalone desktop integration package for HingeZero Memory, built around the 
 
 **Permissions:** The application never asks for administrator privileges, does not scan your files, uses no analytics or telemetry, and only imports files you select. It writes its encrypted vault under `~/HingeZeroMemory/vault.sqlite3` (your home directory). The local API and Ollama connection are off until you turn them on. It does **not** modify or inject itself into other AI programs.
 
-**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.2; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
+**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.3; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
 
 ## What it does
 
@@ -104,6 +104,14 @@ This is a new *desktop integration* around the HingeZero operator, not the full 
 
 **Licence:** See [LICENSE.md](LICENSE.md), [NOTICE.txt](NOTICE.txt), and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md). PolyForm Noncommercial is **source-available, not an OSI-approved open-source licence**. A separate paid written agreement is needed for commercial use.
 
-## Verification status (v0.1.2)
+## Verification status (v0.1.3)
 
 The release pipeline gates downloads behind tests, dependency audits (runtime **and** build-time) and Python Bandit security analysis. GitHub CodeQL analyzes Python and workflows separately. The checks cannot prove absence of security flaws, and unsigned binaries may be blocked by Windows/macOS. The software source is public, but commercial/open-source redistribution rights require the copyright owner's explicit choice of licence.
+
+## Changes in v0.1.3
+
+- Fixed associative retrieval when the vault contains a mixture of lexical and local semantic embeddings, avoiding mismatched vector dimensions.
+- Prevented encrypted backups from following dangling symlink destinations; a regression test confirms no redirected file is created.
+- Added regression checks and whole-repository tests, plus free Semgrep and Gitleaks reviews.
+- Existing v0.1.2 encrypted vaults use the same schema and can be opened with the same passphrase. No import or migration step is required.
+
