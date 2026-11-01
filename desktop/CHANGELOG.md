@@ -1,5 +1,16 @@
 # HingeZero Memory Desktop release notes
 
+## v0.1.4 — original-core integration
+
+- Integrated the **unchanged original HingeZero Core** (source blob `ec0ec9c56c233b97038d88618ad9f2bcff26bcab`) into desktop retrieval.
+- Replaced the simplified dual-tanh surrogate with original eight-step refinement and Witness verification of stored-state identity.
+- Connected the original retaining loop to repeated desktop searches and exposed verified session checkpoint rollback logic.
+- Added source-fidelity, Witness invocation, retention/rollback, mixed-embedding and false-factual-truth tests.
+- Existing encrypted local vault format remains unchanged; optional local AI and explicit-consent behaviour are preserved.
+- **Not included:** the separate billion-pattern C++ research engine. Benchmark throughput figures do not describe desktop performance.
+
+**Status:** Unsigned preview; no independent penetration test or production security certification. Source-available under PolyForm Noncommercial; commercial rights require a separate agreement.
+
 ## v0.1.3 — maintenance and security hardening
 
 - Fixed retrieval with mixed lexical and semantic embedding dimensions; deterministic ranking and the original memory evidence are preserved.

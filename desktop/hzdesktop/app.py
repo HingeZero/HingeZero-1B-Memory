@@ -10,7 +10,7 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from hzdesktop import __version__
 from hzdesktop.vault import Vault
-from hzdesktop.retrieval import search
+from hzdesktop.retrieval import search, RetainedMemorySession
 from hzdesktop.importers import extract, chunks, SUPPORTED
 from hzdesktop import ollama
 from hzdesktop.api import LocalAPI
@@ -70,6 +70,7 @@ class MemoryApp:
         self.api = None
         self.events = queue.Queue()
         self.selected = []
+        self.retained_session = RetainedMemorySession()
         self.use_ollama = tk.BooleanVar(value=False)
         self.embed_model = tk.StringVar(value="embeddinggemma")
         self.chat_model = tk.StringVar(value="llama3.2:3b")
@@ -182,12 +183,13 @@ class MemoryApp:
                 self.status.set("Computing local query embedding…")
                 self.work(lambda: ollama.embed(model, question),
                           lambda vec: self.display_results(search(self.vault.list(), question,
-                                          query_embedding=vec, embedding_model=model)))
+                                          query_embedding=vec, embedding_model=model,
+                                          session=self.retained_session)))
                 return
             except Exception as e:
                 messagebox.showerror("Model name", str(e))
                 return
-        self.display_results(search(self.vault.list(), question))
+        self.display_results(search(self.vault.list(), question, session=self.retained_session))
 
     def display_results(self, found):
         self.selected = [item["record"] for item in found]
@@ -230,6 +232,7 @@ class MemoryApp:
             messagebox.showerror("Import refused", str(e)[:700], parent=self.root)
 
     def save_document(self, title, segments, source):
+        self.retained_session.reset()
         if self.use_ollama.get():
             try:
                 model = ollama.valid_model(self.embed_model.get())
@@ -267,6 +270,7 @@ class MemoryApp:
         if messagebox.askyesno("Delete permanently", f"Delete memory '{note['title']}'?", parent=self.root):
             with self.api.lock if self.api else _NoopLock():
                 self.vault.delete(note["id"])
+            self.retained_session.reset()
             self.refresh()
 
     def backup(self):

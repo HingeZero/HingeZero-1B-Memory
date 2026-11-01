@@ -10,7 +10,7 @@
 
 ## Automated release
 
-The v0.1.3 maintenance release is built from branch `desktop-release-v0.1.3` with security checks and a unique release tag `desktop-v0.1.3` created only when tests pass. Existing release assets and prior tags must never be overwritten. For later releases, update the version and tag a reviewed commit; the tag-triggered workflow also supports `desktop-v*`.
+The v0.1.4 core integration release is built from `desktop-core-integration-v0.1.4`. Source pushes run tests; the reviewed release uses a new tag `desktop-v0.1.4`. Never replace prior binaries. Existing release assets and prior tags must never be overwritten. For later releases, update the version and tag a reviewed commit; the tag-triggered workflow also supports `desktop-v*`.
 
 The `.github/workflows/release.yml` workflow runs tests and a dependency audit, builds the desktop app on Windows, Linux and macOS, attaches archives to a GitHub Release and emits `SHA256SUMS.txt` for download verification. The workflow does not automatically sign binaries or notarize macOS packages.
 
