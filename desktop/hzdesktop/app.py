@@ -34,10 +34,12 @@ class Consent(tk.Toplevel):
                       "• No cloud service or telemetry is used.\n"
                       "• Optional Ollama and API access start DISABLED.\n"
                       "• Losing your password means losing access to the vault.\n"
-                      "• This is a personal app, not a medical or safety system."),
+                      "• Free for permitted noncommercial use; commercial use requires a paid licence.\n"
+                      "• Licence terms: polyformproject.org/licenses/noncommercial/1.0.0\n"
+                      "• This is not a medical or safety system."),
                   justify="left").pack(anchor="w")
         self.ok = tk.BooleanVar(value=False)
-        ttk.Checkbutton(panel, text="I understand and consent to these storage permissions",
+        ttk.Checkbutton(panel, text="I agree to the licence and consent to these storage permissions",
                         variable=self.ok).pack(anchor="w", pady=(12, 6))
         ttk.Label(panel, text="Passphrase (at least 12 characters)").pack(anchor="w")
         self.password = ttk.Entry(panel, show="*", width=47)
