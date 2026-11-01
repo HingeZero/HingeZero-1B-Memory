@@ -302,9 +302,10 @@ class MemoryApp:
         def prepare():
             try:
                 vec = ollama.embed(embed_model, question)
-                relevant = search(self.vault.list(), question, query_embedding=vec, embedding_model=embed_model)
+                relevant = search(self.vault.list(), question, query_embedding=vec, embedding_model=embed_model,
+                                  session=self.retained_session)
             except Exception:
-                relevant = search(self.vault.list(), question)
+                relevant = search(self.vault.list(), question, session=self.retained_session)
             response = ollama.answer(chat_model, question, relevant)
             return response, relevant
         def done(result):
