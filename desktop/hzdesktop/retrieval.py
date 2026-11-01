@@ -69,27 +69,32 @@ def search(records: list[dict], query: str, limit: int = 5,
     for rec in records:
         lex = lexical_vector(rec["title"] + " " + rec["content"])
         score = max(0.0, dot(qlex, lex)) if any(qlex) else 0.0
-        vec = lex
+        semantic = None
         if (qsemantic and rec.get("embedding_model") == embedding_model
                 and isinstance(rec.get("embedding"), list)
                 and len(rec["embedding"]) == len(qsemantic)):
-            vec = unit([float(x) for x in rec["embedding"]])
-            score = 0.15 * score + 0.85 * max(0.0, dot(qsemantic, vec))
+            candidate = [float(x) for x in rec["embedding"]]
+            if all(math.isfinite(x) for x in candidate):
+                semantic = unit(candidate)
+                score = 0.15 * score + 0.85 * max(0.0, dot(qsemantic, semantic))
         if score > 1e-9:
-            pool.append((score, rec, vec))
+            # Retain BOTH representations. Never mix lexical and semantic vector
+            # spaces in a single associative refinement field.
+            pool.append((score, rec, lex, semantic))
     pool.sort(key=lambda x: (-x[0], x[1]["id"]))
     pool = pool[:32]
     if not pool:
         return []
-    use_semantic = qsemantic is not None and all(len(v) == len(qsemantic) and r.get("embedding_model") == embedding_model and r.get("embedding") for _, r, v in pool)
+    use_semantic = qsemantic is not None and all(sem is not None for _, _, _, sem in pool)
     q = qsemantic if use_semantic else qlex
+    vectors = [sem if use_semantic else lex for _, _, lex, sem in pool]
     if any(q):
-        transformed = hz_refine(q, [v for _, _, v in pool], steps=steps)
+        transformed = hz_refine(q, vectors, steps=steps)
     else:
         transformed = q
     results = []
-    for base, rec, vec in pool:
-        refined = max(0.0, dot(transformed, vec)) if len(transformed) == len(vec) else 0.0
+    for (base, rec, _, _), vec in zip(pool, vectors):
+        refined = max(0.0, dot(transformed, vec))
         # Retain original evidence ranking; optional HZ only contributes a bounded adjustment.
         blended = 0.85 * base + 0.15 * refined
         results.append({"score": blended, "base_score": base, "record": rec})
