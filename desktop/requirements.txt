@@ -1,2 +1,2 @@
-cryptography==46.0.4
-pypdf==5.9.0
+cryptography==50.0.0
+pypdf==6.21.4
