@@ -51,3 +51,18 @@ def test_docx_rejects_entity_expansion(tmp_path):
         zipped.writestr('word/document.xml', payload)
     with pytest.raises(Exception):
         extract(doc)
+
+
+def test_backup_refuses_dangling_symlink_destination(tmp_path):
+    alias = tmp_path / 'backup-alias.db'
+    target = tmp_path / 'not-created.db'
+    try:
+        alias.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip('symlinks unavailable')
+    with Vault(tmp_path / 'source' / 'vault.sqlite3', 'long-and-unique-passphrase', create=True) as vault:
+        vault.add('meeting', 'private content')
+        with pytest.raises((FileExistsError, ValueError, OSError)):
+            vault.backup_encrypted(alias)
+    assert alias.is_symlink()
+    assert not target.exists()
