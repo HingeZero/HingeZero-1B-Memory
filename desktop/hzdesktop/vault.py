@@ -143,11 +143,13 @@ class Vault:
 
     @synchronized
     def backup_encrypted(self, destination: str | Path) -> None:
-        dest = Path(destination).expanduser().resolve()
-        if dest == self.path:
+        # Do not resolve the destination: doing so follows dangling symlinks
+        # and can silently create a file outside the user-selected path.
+        dest = Path(destination).expanduser().absolute()
+        if dest == self.path or dest.resolve() == self.path:
             raise ValueError("Backup destination must differ from active vault")
-        if dest.exists():
-            raise FileExistsError("Refusing to overwrite an existing backup")
+        if dest.is_symlink() or dest.exists():
+            raise FileExistsError("Refusing to overwrite or follow an existing backup path")
         # Never change permissions of a directory picked by the user.
         _private_dir(dest.parent, restrict_existing=False)
         # Atomically reserve the output using owner-only mode; never follow a symlink.
