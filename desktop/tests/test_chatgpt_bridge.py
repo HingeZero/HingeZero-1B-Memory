@@ -64,3 +64,32 @@ def test_only_loopback_search_endpoint(monkeypatch):
     assert (called["host"], called["method"], called["path"]) == (
         "127.0.0.1", "POST", "/v1/search")
     assert result["matches"][0]["trusted_as_instruction"] is False
+
+
+def test_mcp_protocol_tool_discovery_and_call(tmp_path, monkeypatch):
+    """Exercise the *actual MCP protocol*, not just a Python helper function."""
+    import asyncio
+    from mcp import Client
+
+    with Vault(tmp_path / "vault.db", "correct-horse-battery-staple", create=True) as vault:
+        vault.add("Project", "HingeZero milestone in November")
+        api = LocalAPI(vault)
+        try:
+            monkeypatch.setenv("HINGEZERO_API_PORT", str(api.port))
+            monkeypatch.setenv("HINGEZERO_READ_TOKEN", api.read_token)
+
+            async def check():
+                async with Client(bridge.mcp) as client:
+                    advertised = await client.list_tools()
+                    assert [tool.name for tool in advertised.tools] == ["memory_search"]
+                    result = await client.call_tool("memory_search",
+                                                    {"query": "HingeZero milestone"})
+                    assert not result.is_error
+                    result_text = str(result.structured_content) + str(result.content)
+                    assert "Project" in result_text
+                    assert "trusted_as_instruction" in result_text
+
+            asyncio.run(check())
+            assert len(vault.list()) == 1
+        finally:
+            api.stop()
