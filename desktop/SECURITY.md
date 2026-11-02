@@ -46,10 +46,14 @@ Prompts explicitly label retrieved memory as untrusted data. That reduces but do
 
 Please contact the repository owner privately, rather than publishing an exploit with user-data exposure. Avoid submitting real personal data into GitHub issues.
 
-## Automated security verification for v0.1.2
+## Automated security verification for v0.1.4
 
 - GitHub Actions executes unit/regression tests, HingeZero self-check, Bandit static Python security analysis, and pip-audit on runtime and build requirements before packaging.
 - GitHub CodeQL scans Python and Actions workflows weekly and on pushes to the desktop release branch; findings should be reviewed on GitHub's Security tab. A successful CodeQL run does not imply zero alerts.
 - The encrypted backup implementation reserves output atomically with owner-only permissions and preserves permissions of user-selected backup folders.
 - DOCX XML parsing uses defusedxml to reject entity expansion.
 - Public binaries are **not signed, notarized or independently penetration-tested**. No malware-scanning certificate is claimed.
+
+## Original HingeZero Core
+
+Desktop v0.1.4 integrates the original eight-step HingeZero Core and Witness; the Witness only verifies a returned candidate matches a stored representation. It does not certify correctness, prevent prompt injection, or ensure the intended memory was chosen. The retaining loop checkpoint is session-local, not encrypted for persistence across restarts. The 1-billion C++ research engine remains separate.

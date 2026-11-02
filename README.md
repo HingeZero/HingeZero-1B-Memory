@@ -4,24 +4,24 @@
 
 HingeZero Memory Desktop is an offline-first memory vault built around David Duffy's original HingeZero associative-memory core. Add notes or import documents, search your saved information, and optionally give a local AI application access through an authenticated API.
 
-**[Download the desktop preview — v0.1.5](https://github.com/HingeZero/HingeZero-1B-Memory/releases/tag/desktop-v0.1.5)** · **[User guide](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/README.md)** · **[Developer integration](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/README.md#local-api-for-existing-ai-tools)**
+**[Download the desktop preview — v0.1.6](https://github.com/HingeZero/HingeZero-1B-Memory/releases/tag/desktop-v0.1.6)** · **[User guide](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/README.md)** · **[Developer integration](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/README.md#local-api-for-existing-ai-tools)**
 
 ## Download and try it
 
 | Platform | Download |
 | --- | --- |
-| Windows x64 | [HZMemory-Windows-x64.zip](https://github.com/HingeZero/HingeZero-1B-Memory/releases/download/desktop-v0.1.5/HZMemory-Windows-x64.zip) |
-| Linux x64 | [HZMemory-Linux-x64.tar.gz](https://github.com/HingeZero/HingeZero-1B-Memory/releases/download/desktop-v0.1.5/HZMemory-Linux-x64.tar.gz) |
-| macOS | [HZMemory-macOS.zip](https://github.com/HingeZero/HingeZero-1B-Memory/releases/download/desktop-v0.1.5/HZMemory-macOS.zip) |
+| Windows x64 | [HZMemory-Windows-x64.zip](https://github.com/HingeZero/HingeZero-1B-Memory/releases/download/desktop-v0.1.6/HZMemory-Windows-x64.zip) |
+| Linux x64 | [HZMemory-Linux-x64.tar.gz](https://github.com/HingeZero/HingeZero-1B-Memory/releases/download/desktop-v0.1.6/HZMemory-Linux-x64.tar.gz) |
+| macOS | [HZMemory-macOS.zip](https://github.com/HingeZero/HingeZero-1B-Memory/releases/download/desktop-v0.1.6/HZMemory-macOS.zip) |
 
-These are **unsigned preview builds**. Check the [release notes and SHA-256 checksums](https://github.com/HingeZero/HingeZero-1B-Memory/releases/tag/desktop-v0.1.5) for compatibility and verification details.
+These are **unsigned preview builds**. Check the [release notes and SHA-256 checksums](https://github.com/HingeZero/HingeZero-1B-Memory/releases/tag/desktop-v0.1.6) for compatibility and verification details.
 
 1. Download and extract the package for your operating system.
 2. Start `HZMemory.exe`, `HZMemory` or `HZMemory.app`, accept the permissions notice and create your vault passphrase.
 3. Choose **Add memory**. Try a note such as “The HingeZero demo is Thursday at 14:00.”
 4. Search for “HingeZero demo” to retrieve the saved note. Close and reopen the app, unlock the vault and search again to try persistent storage.
 
-The desktop app works without an AI model or an internet connection. It imports only the files you select. See the [setup guide](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/README.md#start-in-60-seconds) for platform details.
+The desktop app works without an AI model or an internet connection. It imports only the files you select. See the [setup guide](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/README.md#start-in-60-seconds) for platform details.
 
 ## What you can use it for
 
@@ -47,20 +47,20 @@ Requests use `Authorization: Bearer <session-token>` and `Content-Type: applicat
 
 Your application decides what to save, when to search and how to include retrieved records in the AI's context.
 
-- [Python API example and setup](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/README.md#local-api-for-existing-ai-tools)
-- [Optional Ollama integration](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/README.md#optional-local-ai)
-- [Optional read-only ChatGPT MCP bridge](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/chatgpt-bridge/README.md)
-- [Source, local tests and self-check](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/README.md#running-from-source-python-311)
+- [Python API example and setup](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/README.md#local-api-for-existing-ai-tools)
+- [Optional Ollama integration](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/README.md#optional-local-ai)
+- [ChatGPT save-and-recall bridge](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/chatgpt-bridge/README.md)
+- [Source, local tests and self-check](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/README.md#running-from-source-python-311)
 
-Use the **[v0.1.5 source](https://github.com/HingeZero/HingeZero-1B-Memory/tree/desktop-v0.1.5/desktop)** with this release; the default branch also contains earlier desktop and research materials.
+Use the **[v0.1.6 source](https://github.com/HingeZero/HingeZero-1B-Memory/tree/desktop-v0.1.6/desktop)** with this release; the default branch also contains the desktop source and research materials.
 
 ## Licensing and collaboration
 
-The **desktop application** is source-available under [PolyForm Noncommercial 1.0.0](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/LICENSE.md), with its [Required Notice](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/NOTICE.txt). Permitted noncommercial use is free. Commercial use requires a separate written agreement; see [commercial licensing](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/COMMERCIAL-LICENSING.md).
+The **desktop application** is source-available under [PolyForm Noncommercial 1.0.0](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/LICENSE.md), with its [Required Notice](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/NOTICE.txt). Permitted noncommercial use is free. Commercial use requires a separate written agreement; see [commercial licensing](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/COMMERCIAL-LICENSING.md).
 
 These desktop terms do not relicense research files elsewhere in this repository.
 
-**Created by David Duffy / HingeZero.** For technical collaboration or commercial licensing, contact David through the [established project contact](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.5/desktop/COMMERCIAL-LICENSING.md#enquiring-about-commercial-terms).
+**Created by David Duffy / HingeZero.** For technical collaboration or commercial licensing, contact David through the [established project contact](https://github.com/HingeZero/HingeZero-1B-Memory/blob/desktop-v0.1.6/desktop/COMMERCIAL-LICENSING.md#enquiring-about-commercial-terms).
 
 ## Billion-memory research
 

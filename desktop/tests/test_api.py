@@ -29,3 +29,22 @@ def test_authorization_local_and_memory(tmp_path):
             assert request(api.port, '/v1/search', {'query':'hi'}, 'incorrect')[0] == 401
         finally:
             api.stop()
+
+
+def test_read_only_token_searches_but_cannot_write(tmp_path):
+    with Vault(tmp_path / "vault.db", "correct-horse-battery-staple", create=True) as vault:
+        vault.add("Meeting", "Project milestone tomorrow")
+        api = LocalAPI(vault)
+        try:
+            assert api.read_token != api.token
+            status, data = request(api.port, "/v1/search",
+                                   {"query": "project milestone"}, api.read_token)
+            assert status == 200 and data["results"][0]["title"] == "Meeting"
+            status, data = request(api.port, "/v1/remember",
+                                   {"title": "unauthorised", "content": "new record"},
+                                   api.read_token)
+            assert status == 403
+            assert len(vault.list()) == 1
+            assert request(api.port, "/v1/search", {"query": "project"}, "invalid")[0] == 401
+        finally:
+            api.stop()

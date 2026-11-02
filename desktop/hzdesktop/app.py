@@ -10,7 +10,7 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from hzdesktop import __version__
 from hzdesktop.vault import Vault
-from hzdesktop.retrieval import search
+from hzdesktop.retrieval import search, RetainedMemorySession
 from hzdesktop.importers import extract, chunks, SUPPORTED
 from hzdesktop import ollama
 from hzdesktop.api import LocalAPI
@@ -70,6 +70,7 @@ class MemoryApp:
         self.api = None
         self.events = queue.Queue()
         self.selected = []
+        self.retained_session = RetainedMemorySession()
         self.use_ollama = tk.BooleanVar(value=False)
         self.embed_model = tk.StringVar(value="embeddinggemma")
         self.chat_model = tk.StringVar(value="llama3.2:3b")
@@ -148,7 +149,7 @@ class MemoryApp:
                     "Never share the token. Stop it when not needed."), wraplength=680).pack(anchor="w", pady=6)
         self.api_btn = ttk.Button(settings_tab, text="Start local API (consent required)", command=self.toggle_api)
         self.api_btn.pack(anchor="w", pady=8)
-        self.api_info = tk.Text(settings_tab, height=5, wrap="word", state="disabled")
+        self.api_info = tk.Text(settings_tab, height=8, wrap="word", state="disabled")
         self.api_info.pack(fill="x")
         ttk.Label(self.root, textvariable=self.status, relief="sunken", anchor="w", padding=5).pack(fill="x", padx=10, pady=(0, 6))
 
@@ -182,12 +183,13 @@ class MemoryApp:
                 self.status.set("Computing local query embedding…")
                 self.work(lambda: ollama.embed(model, question),
                           lambda vec: self.display_results(search(self.vault.list(), question,
-                                          query_embedding=vec, embedding_model=model)))
+                                          query_embedding=vec, embedding_model=model,
+                                          session=self.retained_session)))
                 return
             except Exception as e:
                 messagebox.showerror("Model name", str(e))
                 return
-        self.display_results(search(self.vault.list(), question))
+        self.display_results(search(self.vault.list(), question, session=self.retained_session))
 
     def display_results(self, found):
         self.selected = [item["record"] for item in found]
@@ -230,6 +232,7 @@ class MemoryApp:
             messagebox.showerror("Import refused", str(e)[:700], parent=self.root)
 
     def save_document(self, title, segments, source):
+        self.retained_session.reset()
         if self.use_ollama.get():
             try:
                 model = ollama.valid_model(self.embed_model.get())
@@ -267,6 +270,7 @@ class MemoryApp:
         if messagebox.askyesno("Delete permanently", f"Delete memory '{note['title']}'?", parent=self.root):
             with self.api.lock if self.api else _NoopLock():
                 self.vault.delete(note["id"])
+            self.retained_session.reset()
             self.refresh()
 
     def backup(self):
@@ -298,9 +302,10 @@ class MemoryApp:
         def prepare():
             try:
                 vec = ollama.embed(embed_model, question)
-                relevant = search(self.vault.list(), question, query_embedding=vec, embedding_model=embed_model)
+                relevant = search(self.vault.list(), question, query_embedding=vec, embedding_model=embed_model,
+                                  session=self.retained_session)
             except Exception:
-                relevant = search(self.vault.list(), question)
+                relevant = search(self.vault.list(), question, session=self.retained_session)
             response = ollama.answer(chat_model, question, relevant)
             return response, relevant
         def done(result):
@@ -318,13 +323,15 @@ class MemoryApp:
             self.set_text(self.api_info, "Stopped. Access token revoked.")
             return
         if not messagebox.askyesno("Enable local memory API",
-              "Other programs on this computer can retrieve or add vault memories IF they know the session token. "
+              "The ChatGPT read-only token can only search; the separate full-access token permits writes. "
               "Use only with programs you trust. Start the API?", parent=self.root):
             return
         self.api = LocalAPI(self.vault)
         self.api_btn.configure(text="Stop local API")
         self.set_text(self.api_info, f"API: http://127.0.0.1:{self.api.port}\n"
-              f"Session token (keep private): {self.api.token}\nPOST /v1/search or POST /v1/remember. Bearer token required.\n"
+              f"READ-ONLY ChatGPT token: {self.api.read_token}\n"
+              f"FULL-ACCESS token (local setup only; never paste into ChatGPT): {self.api.token}\n"
+              "Read-only: POST /v1/search. Full-access: /v1/search or /v1/remember.\n"
               "Close the app to revoke access.")
 
     def work(self, operation, finish):
