@@ -1,4 +1,4 @@
-# HingeZero Memory Desktop v0.1.2
+# HingeZero Memory Desktop v0.1.6
 
 **Private, offline-first memory vault with deterministic associative retrieval.**  
 A standalone desktop integration package for HingeZero Memory, built around the dual-tanh memory operator.
@@ -13,12 +13,12 @@ A standalone desktop integration package for HingeZero Memory, built around the 
 
 **Permissions:** The application never asks for administrator privileges, does not scan your files, uses no analytics or telemetry, and only imports files you select. It writes its encrypted vault under `~/HingeZeroMemory/vault.sqlite3` (your home directory). The local API and Ollama connection are off until you turn them on. It does **not** modify or inject itself into other AI programs.
 
-**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.2; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
+**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.6; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
 
 ## What it does
 
 - **Persistent local encrypted memory:** AES-256-GCM per record, PBKDF2-HMAC-SHA256 password derivation (600k rounds), encrypted backup; no stored password or recovery key.
-- **Recall:** Deterministic lexical retrieval (feature-hashed word vectors) plus optional HingeZero dual-tanh two-step candidate refinement. The core equation is `φ(h) = tanh(h) + α·tanh(2h)`. Results provide the original stored notes as evidence.
+- **Recall:** Deterministic lexical candidate retrieval with the **unchanged original HingeZero Core** (8-step dual-tanh refinement), genuine HingeZero Witness verification of stored-state identity, and a session-local retaining loop with rollback. The core equation is `φ(h) = tanh(h) + α·tanh(2h)`. Results provide the original stored notes as evidence; Witness verification does not establish factual truth.
 - **Local AI integration:** Optional Ollama embedding model `embeddinggemma` and chat model `llama3.2:3b`. These models must be installed separately; app never downloads them automatically. Memory sent to Ollama is sent to **127.0.0.1** only, after the user enables it and approves the action.
 - **Documents:** User-selected TXT, Markdown, CSV, JSON, DOCX and text-based PDF; importer enforces type and size limits. Scanned/image PDFs require OCR, not included.
 - **Local API:** Optional bearer-token-protected JSON endpoints for `/v1/search` and `/v1/remember`, bound to `127.0.0.1` on a random free port. The token changes each launch, and access stops on shutdown.
@@ -100,10 +100,38 @@ The provided GitHub Actions workflow builds Windows, Linux and macOS standalone 
 
 ## Scope and IP
 
-This is a new *desktop integration* around the HingeZero operator, not the full 1-billion-record disk-scanning research demonstration. The user-friendly app currently stores up to 20,000 encrypted memory chunks with a linear in-memory candidate search. It is not a substitute for the billion-record C++ engine or a production multi-tenant server.
+This is a new *desktop integration* around the HingeZero operator, not the full 1-billion-record disk-scanning research demonstration. The user-friendly app currently stores up to 20,000 encrypted memory chunks with a linear lexical/optional local-embedding candidate search and up to 256 candidates supplied to the original HingeZero Core. It is not a substitute for the billion-record C++ engine or a production multi-tenant server.
 
 **Licence:** See [LICENSE.md](LICENSE.md), [NOTICE.txt](NOTICE.txt), and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md). PolyForm Noncommercial is **source-available, not an OSI-approved open-source licence**. A separate paid written agreement is needed for commercial use.
 
-## Verification status (v0.1.2)
+## Verification status (v0.1.6)
 
 The release pipeline gates downloads behind tests, dependency audits (runtime **and** build-time) and Python Bandit security analysis. GitHub CodeQL analyzes Python and workflows separately. The checks cannot prove absence of security flaws, and unsigned binaries may be blocked by Windows/macOS. The software source is public, but commercial/open-source redistribution rights require the copyright owner's explicit choice of licence.
+
+## Changes in v0.1.3
+
+- Fixed associative retrieval when the vault contains a mixture of lexical and local semantic embeddings, avoiding mismatched vector dimensions.
+- Prevented encrypted backups from following dangling symlink destinations; a regression test confirms no redirected file is created.
+- Added regression checks and whole-repository tests, plus free Semgrep and Gitleaks reviews.
+- Existing v0.1.2 encrypted vaults use the same schema and can be opened with the same passphrase. No import or migration step is required.
+
+
+## Core integration in v0.1.6
+
+**Source fidelity:** The original `HingeZero_Core.py` (Git blob `ec0ec9c56c233b97038d88618ad9f2bcff26bcab`) is bundled **byte-for-byte unchanged** as `hzdesktop/HingeZero_Core.py`. Desktop retrieval calls its `HingeZeroWitness.refine()`, `observe()` and `verify()`; repeated desktop searches use `HingeZeroRetainingLoop` to maintain a session-local checkpoint with rollback under drift. Checkpoints reset when candidates change and are **not** persisted through restarts.
+
+**Limits:** The desktop still uses a lexical/optional local embedding shortlist (maximum 256 candidates) and a local encrypted store (20,000 records). This is not the separate one-billion-bipolar-pattern C++ backend. Benchmarks of that backend or other HingeZero configurations are **not desktop performance measurements**. Witness verification checks stored-state identity, not memory correctness or the intended answer. There is no general-purpose semantic understanding without a separately enabled embedding model.
+
+
+## ChatGPT MCP bridge (v0.1.6)
+
+The optional HZMemory-ChatGPT-Bridge.zip provides read-only `memory_search` and,
+when explicitly enabled locally, additive `memory_remember` through OpenAI Secure
+MCP Tunnel. The setup helper prompts privately for tokens. Search always uses
+its read-only token; saving requires a separate token and local opt-in.
+Never paste tokens into ChatGPT. See the [bridge guide](chatgpt-bridge/README.md)
+for setup and the two-conversation save-and-recall acceptance test.
+
+A running bridge and an installed custom MCP plugin are required. This release
+is not automatically connected to ChatGPT and does not archive all conversations.
+Selected saved notes are sent to ChatGPT when a search tool is invoked.

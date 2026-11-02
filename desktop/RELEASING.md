@@ -10,14 +10,7 @@
 
 ## Automated release
 
-A source-branch push runs tests without republishing binaries. To publish the next release, first update the application version and README, push the reviewed commit, and tag that exact commit. For example:
-
-```bash
-git switch desktop-license-v0.1.2
-# Update desktop/hzdesktop/__init__.py and versioned documentation, then commit.
-git tag -a desktop-v0.1.3 -m 'HingeZero Memory Desktop v0.1.3'
-git push origin desktop-v0.1.3
-```
+The v0.1.5 core integration release is built from `desktop-chatgpt-bridge-v0.1.5`. Source pushes run tests; the reviewed release uses a new tag `desktop-v0.1.5`. Never replace prior binaries. Existing release assets and prior tags must never be overwritten. For later releases, update the version and tag a reviewed commit; the tag-triggered workflow also supports `desktop-v*`.
 
 The `.github/workflows/release.yml` workflow runs tests and a dependency audit, builds the desktop app on Windows, Linux and macOS, attaches archives to a GitHub Release and emits `SHA256SUMS.txt` for download verification. The workflow does not automatically sign binaries or notarize macOS packages.
 

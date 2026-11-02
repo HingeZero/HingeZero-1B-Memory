@@ -8,13 +8,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import secrets
 import threading
-from hzdesktop.retrieval import search
+from hzdesktop.retrieval import search, RetainedMemorySession
 
 
 class LocalAPI:
     def __init__(self, vault, port: int = 0):
         self.vault = vault
         self.token = secrets.token_urlsafe(32)
+        self.read_token = secrets.token_urlsafe(32)
+        self.retained_session = RetainedMemorySession()
         self.lock = threading.RLock()
         parent = self
 
@@ -31,7 +33,9 @@ class LocalAPI:
 
             def do_POST(self):
                 supplied = self.headers.get("Authorization", "")
-                if not hmac.compare_digest(supplied.encode(), ("Bearer " + parent.token).encode()):
+                can_write = hmac.compare_digest(supplied, "Bearer " + parent.token)
+                can_read = hmac.compare_digest(supplied, "Bearer " + parent.read_token)
+                if not (can_write or can_read):
                     self._reply(401, {"error": "Unauthorized"})
                     return
                 if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/json":
@@ -48,17 +52,22 @@ class LocalAPI:
                     if self.path == "/v1/search":
                         query = str(payload.get("query", ""))[:2000]
                         with parent.lock:
-                            found = search(parent.vault.list(), query, limit=5)
+                            found = search(parent.vault.list(), query, limit=5,
+                                           session=parent.retained_session)
                         self._reply(200, {"results": [{"id": r["record"]["id"],
                             "title": r["record"]["title"],
                             "content": r["record"]["content"],
                             "source": r["record"]["source"],
                             "score": round(r["score"], 5)} for r in found]})
                     elif self.path == "/v1/remember":
+                        if not can_write:
+                            self._reply(403, {"error": "Read-only session token cannot write"})
+                            return
                         title = str(payload.get("title", ""))[:200]
                         content = str(payload.get("content", ""))
                         with parent.lock:
                             identifier = parent.vault.add(title, content, "local-api")
+                            parent.retained_session.reset()
                         self._reply(201, {"id": identifier})
                     else:
                         self._reply(404, {"error": "Unknown endpoint"})
