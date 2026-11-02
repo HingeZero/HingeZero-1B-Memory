@@ -1,4 +1,4 @@
-# HingeZero Memory Desktop v0.1.1
+# HingeZero Memory Desktop v0.1.2
 
 **Private, offline-first memory vault with deterministic associative retrieval.**  
 A standalone desktop integration package for HingeZero Memory, built around the dual-tanh memory operator.
@@ -13,7 +13,7 @@ A standalone desktop integration package for HingeZero Memory, built around the 
 
 **Permissions:** The application never asks for administrator privileges, does not scan your files, uses no analytics or telemetry, and only imports files you select. It writes its encrypted vault under `~/HingeZeroMemory/vault.sqlite3` (your home directory). The local API and Ollama connection are off until you turn them on. It does **not** modify or inject itself into other AI programs.
 
-**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.1; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
+**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.2; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
 
 ## What it does
 
@@ -88,12 +88,22 @@ This checks encrypted persistence, wrong-password failure, deterministic retriev
 
 The provided GitHub Actions workflow builds Windows, Linux and macOS standalone archives, runs tests and a dependency vulnerability audit, creates SHA256 checksums, and publishes downloadable assets under a tagged GitHub Release. Workflow permissions are limited to repository content write for the release job. Read [RELEASING.md](RELEASING.md) before making the release public.
 
+## Licensing: free noncommercial / paid commercial
+
+**HingeZero Memory Desktop (the `desktop/` application source and the desktop binaries distributed under this release) is source-available under [PolyForm Noncommercial 1.0.0](LICENSE.md), subject to the [Required Notice](NOTICE.txt).**
+
+- Free noncommercial personal use, study, experiments, and other purposes permitted by the licence. Some charities, universities and other noncommercial organizations have rights under the standard licence text. The official licence controls, not this summary.
+- **Commercial deployment, internal business use, incorporation into paid products, SaaS offerings or commercial redistribution require a separate paid written licence.** See [Commercial Licensing](COMMERCIAL-LICENSING.md). No commercial rights are granted automatically by downloading a binary.
+- Commercial licence pricing and scope are negotiated; there is no checkout or automatic entitlement yet.
+- This desktop-specific licence does **not** change the rights or licensing of other research/source files in the parent `HingeZero-1B-Memory` repository or other HingeZero projects. Independent third-party software retains its own licences.
+- Before relying on the company as licensor, confirm chain of ownership and third-party obligations. Previous versions remain under the terms that applied when distributed.
+
 ## Scope and IP
 
 This is a new *desktop integration* around the HingeZero operator, not the full 1-billion-record disk-scanning research demonstration. The user-friendly app currently stores up to 20,000 encrypted memory chunks with a linear in-memory candidate search. It is not a substitute for the billion-record C++ engine or a production multi-tenant server.
 
-**License:** No redistribution license has yet been chosen. The repository owner should choose the software license and confirm any packaging/release terms before publishing for public reuse. Source accessibility alone is not an open-source license.
+**Licence:** See [LICENSE.md](LICENSE.md), [NOTICE.txt](NOTICE.txt), and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md). PolyForm Noncommercial is **source-available, not an OSI-approved open-source licence**. A separate paid written agreement is needed for commercial use.
 
-## Verification status (v0.1.1)
+## Verification status (v0.1.2)
 
 The release pipeline gates downloads behind tests, dependency audits (runtime **and** build-time) and Python Bandit security analysis. GitHub CodeQL analyzes Python and workflows separately. The checks cannot prove absence of security flaws, and unsigned binaries may be blocked by Windows/macOS. The software source is public, but commercial/open-source redistribution rights require the copyright owner's explicit choice of licence.

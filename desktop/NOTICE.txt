@@ -1,0 +1,7 @@
+Required Notice: Copyright 2026 HingeZero Ltd
+
+Scope: HingeZero Memory Desktop application in the desktop/ directory only.
+Software licence: PolyForm Noncommercial License 1.0.0, see LICENSE.md.
+Commercial permission: a separate paid written agreement is required; see COMMERCIAL-LICENSING.md.
+Other HingeZero research in the parent repository is not relicensed by this notice.
+Third-party libraries remain under their respective licences.

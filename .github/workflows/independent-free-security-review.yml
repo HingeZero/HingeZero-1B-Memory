@@ -1,0 +1,64 @@
+name: Free independent-tool security review (Semgrep + Gitleaks)
+
+on:
+  push:
+    branches:
+      - desktop-license-v0.1.2
+    paths:
+      - 'desktop/**'
+      - 'secure_memory/**'
+      - 'HingeZero_*.py'
+      - 'parity_check.py'
+      - 'verify_recorded_results.py'
+      - '.github/workflows/independent-free-security-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: Semgrep Community Edition - code security
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install free Semgrep Community Edition
+        run: python -m pip install --disable-pip-version-check 'semgrep>=1.100,<3'
+      - name: Independently scan all repository Python application and research code
+        run: |
+          semgrep scan \
+            --config p/security-audit \
+            --config p/python \
+            --metrics=off \
+            --error \
+            --json \
+            --output semgrep-report.json \
+            desktop/hzdesktop desktop/launcher.py secure_memory/src HingeZero_Core.py parity_check.py verify_recorded_results.py
+      - name: Save scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-community-review
+          path: semgrep-report.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  gitleaks:
+    name: Gitleaks CLI - hardcoded secrets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: Install free Gitleaks open-source CLI (no paid action)
+        run: go install github.com/zricethezav/gitleaks/v8@v8.30.1
+      - name: Scan entire repository for hardcoded secrets
+        run: '"$(go env GOPATH)/bin/gitleaks" dir . --redact --no-banner'

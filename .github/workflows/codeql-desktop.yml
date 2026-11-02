@@ -2,7 +2,7 @@ name: CodeQL security analysis — HingeZero Memory Desktop
 
 on:
   push:
-    branches: [desktop-release-v0.1.0]
+    branches: [desktop-license-v0.1.2]
   workflow_dispatch:
   schedule:
     - cron: '12 7 * * 1'

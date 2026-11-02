@@ -34,7 +34,9 @@ def _private_dir(path: Path, restrict_existing: bool = True) -> None:
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     # The app owns its vault directory, but not an arbitrary folder chosen for backups.
     if os.name == "posix" and (restrict_existing or not existed):
-        os.chmod(path, 0o700)
+        # 0700 is required for a private DIRECTORY: only its owner may traverse it.
+        # Semgrep rule incorrectly suggests 0644 (file permissions) for directories.
+        os.chmod(path, 0o700)  # nosemgrep: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions
 
 
 def _private_file(path: Path) -> None:
@@ -141,11 +143,13 @@ class Vault:
 
     @synchronized
     def backup_encrypted(self, destination: str | Path) -> None:
-        dest = Path(destination).expanduser().resolve()
-        if dest == self.path:
+        # Do not resolve the destination: doing so follows dangling symlinks
+        # and can silently create a file outside the user-selected path.
+        dest = Path(destination).expanduser().absolute()
+        if dest == self.path or dest.resolve() == self.path:
             raise ValueError("Backup destination must differ from active vault")
-        if dest.exists():
-            raise FileExistsError("Refusing to overwrite an existing backup")
+        if dest.is_symlink() or dest.exists():
+            raise FileExistsError("Refusing to overwrite or follow an existing backup path")
         # Never change permissions of a directory picked by the user.
         _private_dir(dest.parent, restrict_existing=False)
         # Atomically reserve the output using owner-only mode; never follow a symlink.
