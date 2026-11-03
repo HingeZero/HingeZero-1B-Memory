@@ -1,0 +1,99 @@
+{
+  "title": "HingeZero Witness evidence-gated decision demonstration",
+  "date": "2026-11-03",
+  "seed": 20261103,
+  "patterns": 64,
+  "dimensions": 128,
+  "trials_per_noise": 100,
+  "bit_flip_fractions": [
+    0,
+    0.2,
+    0.3,
+    0.4
+  ],
+  "max_steps": 8,
+  "original_core_git_blob": "ec0ec9c56c233b97038d88618ad9f2bcff26bcab",
+  "configured_thresholds": {
+    "min_similarity": 0.6,
+    "min_margin": 0.1,
+    "min_distinct_support_ids": 2
+  },
+  "evidence_note": "Synthetic per-candidate source IDs; no real-world provenance, truth, or authenticity verification. Every candidate is labeled supported in supported scenarios. A deliberate unverified-source test shows that arbitrary IDs can pass without external validation.",
+  "safety_checks": {
+    "zero_cue": {
+      "status": "HUMAN_REVIEW",
+      "candidate_id": null,
+      "steps": 0,
+      "reason": "invalid_or_missing_cue",
+      "similarity": null,
+      "margin": null,
+      "witness_valid": false
+    },
+    "nan_cue": {
+      "status": "HUMAN_REVIEW",
+      "candidate_id": null,
+      "steps": 0,
+      "reason": "invalid_or_missing_cue",
+      "similarity": null,
+      "margin": null,
+      "witness_valid": false
+    },
+    "missing_sources": {
+      "status": "HUMAN_REVIEW",
+      "candidate_id": null,
+      "steps": 0,
+      "reason": "insufficient_external_support",
+      "similarity": 0.9999999403953552,
+      "margin": 0.8281249403953552,
+      "witness_valid": true
+    },
+    "contradictory_sources": {
+      "status": "HUMAN_REVIEW",
+      "candidate_id": null,
+      "steps": 0,
+      "reason": "contradictory_evidence",
+      "similarity": 0.9999999403953552,
+      "margin": 0.8281249403953552,
+      "witness_valid": true
+    },
+    "exact_supported": {
+      "status": "ACCEPT",
+      "candidate_id": 0,
+      "steps": 0,
+      "reason": "supported_by_supplied_evidence",
+      "similarity": 0.9999999403953552,
+      "margin": 0.8281249403953552,
+      "witness_valid": true
+    },
+    "ambiguous_midpoint": {
+      "status": "HUMAN_REVIEW",
+      "candidate_id": null,
+      "steps": 8,
+      "reason": "ambiguous_near_tie",
+      "similarity": 0.7173974514007568,
+      "margin": 0.017120838165283203,
+      "witness_valid": true
+    },
+    "duplicate_support_ids": {
+      "status": "HUMAN_REVIEW",
+      "candidate_id": null,
+      "steps": 0,
+      "reason": "insufficient_external_support",
+      "similarity": 0.9999999403953552,
+      "margin": 0.8281249403953552,
+      "witness_valid": true
+    },
+    "unverified_source_ids": {
+      "status": "ACCEPT",
+      "candidate_id": 0,
+      "steps": 0,
+      "reason": "supported_by_supplied_evidence",
+      "similarity": 0.9999999403953552,
+      "margin": 0.8281249403953552,
+      "witness_valid": true
+    }
+  },
+  "core_parity_exact": true,
+  "questions_answered": "Fail-closed hold, eight-step cap, early zero-step accept, use of real Witness checks, comparative selective-retrieval outcomes.",
+  "questions_not_answered": "Whether the gate detects truth, independence of source claims, safety in real deployments, novel Hopfield capacity improvement, energy or production latency."
+}
