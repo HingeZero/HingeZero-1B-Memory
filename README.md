@@ -151,3 +151,16 @@ The bank contains reproducible random binary patterns, not text or larger memory
 Source is provided for inspection and reproducing these experiments; **no open-source licence is specified** in this package.
 
 </details>
+
+
+## Published benchmark: HingeZero 0-step vs Modern Hopfield (3 November 2026)
+
+The reproducible [native CPU benchmark](benchmarks/hingezero0-vs-modern-hopfield-2026-11-03/README.md) compares **HingeZero zero-refinement Witness retrieval**, full one-step softmax Modern Hopfield, softmax-top1 indexing, and exact cosine on identical stored binary-pattern banks and noisy cues.
+
+- 3,600 queries per method across 15 configurations, one CPU thread, compiled C++20.
+- Zero-step HingeZero + Witness was approximately **2.1–2.3× faster than the complete one-step Modern Hopfield state update** in these implementations, with similar target-ID accuracy.
+- **Witness verified all 3,600 returned stored-state identities**, independently of whether the intended memory was selected.
+- Important control: zero-step HingeZero, exact cosine and MH softmax-top1 selected identical IDs in all queries; their speeds were comparable. No unique zero-step accuracy gain from the inactive HingeZero nonlinear refinement is claimed.
+- [Source, full trial results, MH beta validation, and reproduction instructions](benchmarks/hingezero0-vs-modern-hopfield-2026-11-03/).
+
+This benchmark concerns *stored-pattern-ID retrieval*, not neural semantic reasoning, an energy benchmark, or general computational superiority.
