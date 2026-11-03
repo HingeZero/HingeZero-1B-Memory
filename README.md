@@ -1,5 +1,7 @@
 # HingeZero Memory
 
+**Developer quickstart (3 November 2026):** [Connect the existing local encrypted HingeZero vault to an offline Ollama assistant](https://github.com/HingeZero/HingeZero-1B-Memory/tree/main/desktop/local-ollama-demo). Includes a small localhost-only Python client and nine tested simulated-service checks. This is an opt-in developer preview, not a new signed desktop release.
+
 **New research (3 November 2026):** [Witness evidence-gated decision test — 0 to 8 HingeZero steps](https://github.com/HingeZero/HingeZero-1B-Memory/tree/main/benchmarks/witness-gated-8step-2026-11-03). Includes runnable Python source, synthetic corruption trials, zero-step and ungated controls, abstention/human-review results, and explicit limitations. **This experiment is separate from the desktop release.**
 
 **[HingeZero project contents — code, benchmarks, downloads and research](https://github.com/HingeZero/HingeZero-)**
