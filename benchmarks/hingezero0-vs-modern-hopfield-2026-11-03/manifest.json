@@ -1,0 +1,201 @@
+{
+  "test_date": "2026-11-03",
+  "version": "CPU zero-refinement matched comparison v1",
+  "numpy": "2.3.5",
+  "python": "3.13.5",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+  "compile_options": "g++ -O3 -std=c++20 -ffp-contract=off -Wall -Wextra",
+  "one_thread_env": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "source_Git_blob": "ec0ec9c56c233b97038d88618ad9f2bcff26bcab",
+  "float32_tie_parity_differences": [
+    {
+      "n": 128,
+      "p": 256,
+      "noise": 0.4,
+      "seed": 2026,
+      "query": 1,
+      "python_selection": 245,
+      "native_selection": 32,
+      "score_difference_double": 0.0
+    },
+    {
+      "n": 128,
+      "p": 1024,
+      "noise": 0.35,
+      "seed": 2026,
+      "query": 4,
+      "python_selection": 991,
+      "native_selection": 920,
+      "score_difference_double": 0.0
+    },
+    {
+      "n": 128,
+      "p": 1024,
+      "noise": 0.35,
+      "seed": 2026,
+      "query": 9,
+      "python_selection": 1003,
+      "native_selection": 636,
+      "score_difference_double": 0.0
+    },
+    {
+      "n": 128,
+      "p": 1024,
+      "noise": 0.4,
+      "seed": 2026,
+      "query": 3,
+      "python_selection": 870,
+      "native_selection": 59,
+      "score_difference_double": 0.0
+    },
+    {
+      "n": 128,
+      "p": 1024,
+      "noise": 0.4,
+      "seed": 2026,
+      "query": 5,
+      "python_selection": 665,
+      "native_selection": 227,
+      "score_difference_double": 0.0
+    },
+    {
+      "n": 128,
+      "p": 4096,
+      "noise": 0.35,
+      "seed": 2026,
+      "query": 3,
+      "python_selection": 3817,
+      "native_selection": 449,
+      "score_difference_double": 0.0
+    },
+    {
+      "n": 128,
+      "p": 4096,
+      "noise": 0.4,
+      "seed": 2026,
+      "query": 1,
+      "python_selection": 2844,
+      "native_selection": 2098,
+      "score_difference_double": 0.0
+    },
+    {
+      "n": 128,
+      "p": 4096,
+      "noise": 0.4,
+      "seed": 2026,
+      "query": 4,
+      "python_selection": 1898,
+      "native_selection": 320,
+      "score_difference_double": 0.0
+    }
+  ],
+  "N_P_noise": [
+    [
+      128,
+      256,
+      0.2
+    ],
+    [
+      128,
+      256,
+      0.35
+    ],
+    [
+      128,
+      256,
+      0.4
+    ],
+    [
+      128,
+      256,
+      0.45
+    ],
+    [
+      128,
+      1024,
+      0.2
+    ],
+    [
+      128,
+      1024,
+      0.35
+    ],
+    [
+      128,
+      1024,
+      0.4
+    ],
+    [
+      128,
+      1024,
+      0.45
+    ],
+    [
+      128,
+      4096,
+      0.2
+    ],
+    [
+      128,
+      4096,
+      0.35
+    ],
+    [
+      128,
+      4096,
+      0.4
+    ],
+    [
+      128,
+      4096,
+      0.45
+    ],
+    [
+      256,
+      1024,
+      0.2
+    ],
+    [
+      256,
+      1024,
+      0.35
+    ],
+    [
+      256,
+      1024,
+      0.4
+    ]
+  ],
+  "seeds": [
+    2026,
+    2027,
+    2028
+  ],
+  "test_queries_per_seed": 80,
+  "MH_validation_queries_per_seed": 24,
+  "MH_betas": [
+    8.0,
+    16.0,
+    32.0,
+    64.0,
+    128.0,
+    256.0
+  ],
+  "notes": [
+    "0-step HZ uses full-bank normalized dot/cosine selection and verifies exact tagged stored row (no tanh performed).",
+    "The full modern Hopfield update is M.T @ softmax(beta * M @ query), followed by stored-pattern nearest readout.",
+    "The MH softmax-top1 baseline reports argmax of softmax weights; it does NOT perform a full modern Hopfield updated-state readout.",
+    "Original HingeZeroWitness source is supplied unchanged and checked by exact Git blob SHA; parity checks use original observe(scores=...) and verify.",
+    "C++ native code uses a faithful zero-refinement observer and integrity branch, not the original Python runtime.",
+    "Benchmark includes implementation overhead; no energy measurement; no guarantee of broader performance or storage equivalence.",
+    "MH beta tuned on distinct validation query set. Same stored-pattern banks and test cues across methods.",
+    "Timing is for a single query, native C++, using median of three repeated executions per query, warmed up.",
+    "Memory storage: both methods share P x N x float32 pattern bank; original Python Witness additionally copies raw and normalized arrays and field state."
+  ],
+  "elapsed_s": 15.75
+}
