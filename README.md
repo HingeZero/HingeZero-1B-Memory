@@ -1,5 +1,7 @@
 # HingeZero Memory
 
+**New research (3 November 2026):** [Witness evidence-gated decision test — 0 to 8 HingeZero steps](https://github.com/HingeZero/HingeZero-1B-Memory/tree/main/benchmarks/witness-gated-8step-2026-11-03). Includes runnable Python source, synthetic corruption trials, zero-step and ungated controls, abstention/human-review results, and explicit limitations. **This experiment is separate from the desktop release.**
+
 **[HingeZero project contents — code, benchmarks, downloads and research](https://github.com/HingeZero/HingeZero-)**
 
 **Save information locally. Recall it later. Connect it to your local AI.**
