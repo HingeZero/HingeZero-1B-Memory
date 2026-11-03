@@ -1,5 +1,7 @@
 # HingeZero Memory
 
+**[HingeZero project contents — code, benchmarks, downloads and research](https://github.com/HingeZero/HingeZero-)**
+
 **Save information locally. Recall it later. Connect it to your local AI.**
 
 HingeZero Memory Desktop is an offline-first memory vault built around David Duffy's original HingeZero associative-memory core. Add notes or import documents, search your saved information, and optionally give a local AI application access through an authenticated API.
