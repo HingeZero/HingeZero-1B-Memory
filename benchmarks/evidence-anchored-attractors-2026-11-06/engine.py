@@ -19,8 +19,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from pathlib import Path
+import sys
 
 import numpy as np
+
+# Stacked on the dual-tanh research branch, not a standalone installed package.
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "dual-tanh-isolation-2026-11-06"))
+sys.path.insert(0, str(HERE.parents[1]))
 
 from HingeZero_Core import HZ_ALPHA, HZ_EPS, HZ_LAMBDA, HZ_STEPS, hinge_phi, _unit
 from operators import AttractorBank, BITS, unpack
