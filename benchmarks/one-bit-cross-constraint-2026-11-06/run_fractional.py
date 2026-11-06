@@ -95,6 +95,7 @@ def main():
         return (x["calibration"]["fragment25"]["correct"],
                 -x["steps"], -x["eta"])
     chosen = max(outcome, key=preference)
+    best_nonzero = max((x for x in outcome if x["eta"] > 0), key=preference)
     zero = next(x for x in outcome if x["eta"] == 0 and x["steps"] == 0)
     original = next(x for x in outcome if x["eta"] == 1 and x["steps"] == 8)
     best_five = sorted(outcome, key=preference, reverse=True)[:5]
@@ -115,6 +116,7 @@ def main():
         "selected": {"eta": chosen["eta"], "steps": chosen["steps"]},
         "zero": zero, "original": original,
         "selected_result": chosen,
+        "best_nonzero_result": best_nonzero,
         "calibration_top_five": [
             {"eta": x["eta"], "steps": x["steps"],
              "fragment25_recall": x["calibration"]["fragment25"]["recall_at_1"]}
@@ -126,6 +128,7 @@ def main():
         Path(args.out).write_text(json.dumps(result, indent=2) + "\n")
     # Include numbers for all reference conditions on a separate holdout.
     for name, item in (("zero", zero), ("original_8_steps", original),
+                       ("best_nonzero", best_nonzero),
                        ("calibration_selected", chosen)):
         print("FRACTIONAL_HOLDOUT=" + json.dumps({
             "name": name, "eta": item["eta"], "steps": item["steps"],
@@ -133,6 +136,18 @@ def main():
             "heldout_fragment25": item["heldout"]["fragment25"],
             "heldout_fragment12": item["heldout"]["fragment12"],
             "heldout_exact": item["heldout"]["exact"],
+        }, sort_keys=True), flush=True)
+    # Report the user-requested tiny increments explicitly. The full grid
+    # is included in the downloadable JSON artifact.
+    for eta in (.001, .002, .005, .010, .020, .050, .1, .2, .5, 1.0):
+        item = next(x for x in outcome if x["eta"] == eta and x["steps"] == 8)
+        print("FRACTIONAL_8STEP_GRID=" + json.dumps({
+            "eta": eta,
+            "calibration_25word": item["calibration"]["fragment25"]["recall_at_1"],
+            "holdout_25word": item["heldout"]["fragment25"]["recall_at_1"],
+            "holdout_12word": item["heldout"]["fragment12"]["recall_at_1"],
+            "holdout_exact": item["heldout"]["exact"]["recall_at_1"],
+            "mean_query_ms": item["heldout"]["fragment25"]["mean_query_ms"],
         }, sort_keys=True), flush=True)
     print("FRACTIONAL_RESULT=" + json.dumps({
         "records": result["records"],
