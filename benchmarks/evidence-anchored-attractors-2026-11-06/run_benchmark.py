@@ -35,7 +35,7 @@ def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
              name: str) -> dict:
     out={"condition":name,"cases":len(cases),"methods":{}}
     for mode in METHODS:
-        exact=accepted=correct_accepts=wrong_accepts=reviews=valid=0
+        exact=accepted=correct_accepts=wrong_accepts=reviews=valid=preflight_holds=0
         mean=[]
         for primary,second,target,is_consistent in cases:
             t0=time.perf_counter_ns()
@@ -43,6 +43,12 @@ def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
             mean.append((time.perf_counter_ns()-t0)/1e6)
             if pred.witness_valid:
                 valid+=1
+            elif pred.reason == "preflight_disagreement":
+                # No Witness step occurs because conflicting cues were held
+                # before any refinement or stored-state readout.
+                preflight_holds+=1
+            else:
+                raise AssertionError("Original Witness failed to verify a selected state")
             if pred.candidate==target:
                 exact+=1
             if pred.decision=="ACCEPT":
@@ -62,10 +68,11 @@ def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
             "coverage":accepted/len(cases),
             "accepted_precision":correct_accepts/accepted if accepted else None,
             "witness_valid_count":valid,
+            "preflight_hold_count":preflight_holds,
             "mean_ms":round(statistics.mean(mean),4),
         }
-        if valid!=len(cases):
-            raise AssertionError("Original Witness failed to verify selected state")
+        if valid+preflight_holds!=len(cases):
+            raise AssertionError("Unaccounted missing or invalid Witness state")
         out["methods"][mode]=results
         print("ANCHOR_ROW="+json.dumps(
             {"condition":name,"mode":mode,**results},sort_keys=True),flush=True)
