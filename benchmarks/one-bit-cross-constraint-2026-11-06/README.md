@@ -1,5 +1,10 @@
 # HingeZero Cross-Constraint Attractor Grid — genuine 1-bit prototype
 
+> **Incremental-strength experiment (new):** [0.001-step-strength results on real FineWeb data](FRACTIONAL_RESULTS.md).
+> Swept 105 configurations without changing the original Core. Small
+> updates retained zero-step recall on 25-word queries, but did **not**
+> improve it; original eight full-strength steps were worse.
+>
 > **Updated primary experiment:** [Full-field 1-bit associative HingeZero](FULL_FIELD_RESULTS.md).
 > HZ0/HZ8 operate over **all 180 packed binary memories** in the original
 > HingeZero attractor field with **no Hamming shortlist**. Hamming is a control.
