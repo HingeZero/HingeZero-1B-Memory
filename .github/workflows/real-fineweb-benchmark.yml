@@ -29,4 +29,4 @@ jobs:
       - name: Fetch real corpus and measure original Core/Witness retrieval
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
-        run: PYTHONUNBUFFERED=1 python benchmarks/real_fineweb.py --records 1000 --queries 40 --max-chars 1200 --progress 250
+        run: PYTHONUNBUFFERED=1 python benchmarks/real_fineweb.py --records 10000 --queries 100 --max-chars 1200 --progress 2000
