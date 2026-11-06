@@ -33,6 +33,10 @@ jobs:
         run: |
           PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/run_benchmark.py \
             --records 180 --output /tmp/one_bit_cross_constraint_results.json
+      - name: Probe packed 1-bit retrieval on genuine FineWeb webpage excerpts
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/real_text_probe.py \
+            --records 128 --queries 24 --max-chars 1200
       - name: Upload full independent run metrics for review
         uses: actions/upload-artifact@v4
         with:
