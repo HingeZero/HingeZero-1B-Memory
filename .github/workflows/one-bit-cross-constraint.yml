@@ -1,0 +1,68 @@
+name: HingeZero genuine 1-bit cross-constraint experiment
+
+on:
+  push:
+    branches:
+      - experiment/one-bit-cross-constraint-2026-11-06
+    paths:
+      - 'benchmarks/one-bit-cross-constraint-2026-11-06/**'
+      - '.github/workflows/one-bit-cross-constraint.yml'
+  pull_request:
+    paths:
+      - 'benchmarks/one-bit-cross-constraint-2026-11-06/**'
+      - '.github/workflows/one-bit-cross-constraint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  one-bit-cross-constraint:
+    name: Full-bank 1-bit HingeZero attractors + 0/8-step Witness + Hamming control
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'numpy>=1.26,<3'
+      - name: Unit tests for genuine 1-bit representation and fail-closed logic
+        run: python -m unittest discover -s benchmarks/one-bit-cross-constraint-2026-11-06 -p 'test_*.py' -v
+      - name: Benchmark all modes and noisy bit-cue regimes
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/run_benchmark.py \
+            --records 180 --output /tmp/one_bit_cross_constraint_results.json
+      - name: Probe packed 1-bit retrieval on genuine FineWeb webpage excerpts
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/real_text_probe.py \
+            --records 128 --queries 24 --max-chars 1200
+      - name: Full-field 1-bit HingeZero retrieval across ALL patterns (no Hamming preselection)
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/run_full_field.py \
+            --records 180 --output /tmp/one_bit_full_field_results.json
+      - name: Original 1-bit Core full-field recall on real FineWeb excerpts
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/real_full_field.py \
+            --records 128 --queries 32
+      - name: Fractional 0.001 update-strength sweep on real FineWeb (calibration vs holdout)
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/run_fractional.py \
+            --records 128 --queries 64 --out /tmp/one_bit_fractional_results.json
+      - name: Upload full independent run metrics for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: one-bit-cross-constraint-results
+          path: |
+            /tmp/one_bit_cross_constraint_results.json
+            /tmp/one_bit_full_field_results.json
+            /tmp/one_bit_fractional_results.json
