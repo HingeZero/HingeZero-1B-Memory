@@ -30,19 +30,37 @@ PASSWORD = "public-corpus-only-ephemeral-test-password"
 
 def iter_real_documents(config: str):
     from datasets import load_dataset
+    import gc
     ds = load_dataset(DATASET, name=config, split="train",
                       revision=REVISION, streaming=True)
-    for row in ds:
-        if not isinstance(row, dict):
-            continue
-        body = row.get("text")
-        source_id = row.get("id")
-        source_url = row.get("url")
-        if not isinstance(body, str) or not isinstance(source_id, str):
-            continue
-        if not isinstance(source_url, str):
-            source_url = ""
-        yield source_id, source_url, body
+    try:
+        for row in ds:
+            if not isinstance(row, dict):
+                continue
+            body = row.get("text")
+            source_id = row.get("id")
+            source_url = row.get("url")
+            if not isinstance(body, str) or not isinstance(source_id, str):
+                continue
+            if not isinstance(source_url, str):
+                source_url = ""
+            yield source_id, source_url, body
+    finally:
+        # The HF parquet streamer can keep Arrow-backed resources alive.
+        # Release them before CPython enters interpreter finalization.
+        del ds
+        gc.collect()
+
+
+def iter_jsonl(path: str):
+    """Read unmodified official dataset-server rows previously saved to JSONL."""
+    with open(path, encoding="utf-8") as src:
+        for line in src:
+            row = json.loads(line)
+            if not (isinstance(row, dict) and isinstance(row.get("id"), str)
+                    and isinstance(row.get("text"), str)):
+                raise ValueError("Invalid public-source JSONL record")
+            yield row["id"], str(row.get("url") or ""), row["text"]
 
 
 def real_query(text: str) -> tuple[str, str] | None:
@@ -97,7 +115,9 @@ def main(args):
                                      max(1, args.queries - 1)))
                 for i in range(args.queries)
             }
-            for source_id, source_url, body in iter_real_documents(args.config):
+            document_stream = (iter_jsonl(args.source_jsonl) if args.source_jsonl
+                               else iter_real_documents(args.config))
+            for source_id, source_url, body in document_stream:
                 if seen_source_ids is not None:
                     if source_id in seen_source_ids:
                         continue
@@ -106,6 +126,11 @@ def main(args):
                 query = real_query(content)
                 if not query:
                     continue
+                # Include replayed rows in the manifest hash as well, so a
+                # resumed run can be compared against a one-shot source stream.
+                source_hash.update(source_id.encode("utf-8", "replace"))
+                source_hash.update(b"\x00")
+                source_hash.update(hashlib.sha256(content.encode("utf-8")).digest())
                 # Replay the exact ordered, filtered source stream to locate the
                 # next uncommitted row. Correct but expensive at 1B scale.
                 if counted < existing:
@@ -114,9 +139,6 @@ def main(args):
                 # The stored text is an authentic excerpt from an original webpage.
                 hostname = urlsplit(source_url).hostname or "FineWeb document"
                 identifier = vault.add(hostname, content, source_url[:400])
-                source_hash.update(source_id.encode("utf-8", "replace"))
-                source_hash.update(b"\x00")
-                source_hash.update(hashlib.sha256(content.encode("utf-8")).digest())
                 if counted in sample_indices:
                     samples[counted] = {
                         "id": identifier,
@@ -129,6 +151,12 @@ def main(args):
                     print(json.dumps({"actual_records": counted, "insert_s": round(time.perf_counter()-t0, 2)}), flush=True)
                 if counted == args.records:
                     break
+            # A for-loop exiting by break does not guarantee that the streaming
+            # generator is closed before the interpreter shuts down.
+            document_stream.close()
+            del document_stream
+            import gc
+            gc.collect()
             if counted < args.records:
                 raise RuntimeError(f"Source exhausted after {counted}; target was {args.records}")
             insert_s = time.perf_counter() - t0
@@ -193,7 +221,8 @@ def main(args):
                 }
         result = {
             "status": "PASS" if all(x["all_witness_verified"] for x in reports) else "FAIL",
-            "dataset": DATASET, "config": args.config, "revision": REVISION,
+            "dataset": DATASET, "config": args.config,
+            "revision": "dataset-server snapshot (not pinned)" if args.source_jsonl else REVISION,
             "existing_records_at_start": existing,
             "record_type": "authentic webpage text excerpts, not entire documents",
             "storage": "sharded encrypted SQLite" if args.shard_dir else "single encrypted SQLite",
@@ -224,6 +253,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--records", type=int, default=1000)
     p.add_argument("--config", choices=("sample-10BT", "default"), default="sample-10BT")
+    p.add_argument("--source-jsonl", type=str, help="Actual FineWeb rows downloaded once from dataset server, for small repeatable tests")
     p.add_argument("--resume", action="store_true")
     p.add_argument("--shard-dir", type=str, help="Fresh/restartable sharded data directory on a large mounted volume")
     p.add_argument("--shard-size", type=int, default=250_000)
