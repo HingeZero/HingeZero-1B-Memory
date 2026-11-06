@@ -74,6 +74,27 @@ considered success.
 The benchmark code is deterministic, audit-friendly, and intentionally separate
 from the desktop release and from the 1B real-memory benchmark.
 
+## Genuine web-text retrieval control
+
+The same packed one-bit encoder and zero/eight-step Core can also be probed
+against **128 actual FineWeb webpage excerpts**, using 24 documents as held-out
+query targets. The script downloads public source records from the official
+FineWeb dataset-server API and reports the original-source digest.
+
+```bash
+python benchmarks/one-bit-cross-constraint-2026-11-06/real_text_probe.py \
+  --records 128 --queries 24
+```
+
+It separately tests exact original-excerpt cues and a contiguous 25-word
+fragment taken from that same document. Only **document identity recovery**
+is scored, not factual contradictions. Every public web document is labelled
+REVIEW, as no validated rule or fact accompanies the page.
+
+These genuine documents are **not** used to construct plausible fictional
+safety decisions. Real text does not supply independently adjudicated safety
+conflict labels, so the two benchmarks are deliberately separate.
+
 ## Future tests
 
 Use independently labelled, independently sourced evidence and calibrate
