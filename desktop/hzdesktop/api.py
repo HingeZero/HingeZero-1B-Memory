@@ -52,7 +52,7 @@ class LocalAPI:
                     if self.path == "/v1/search":
                         query = str(payload.get("query", ""))[:2000]
                         with parent.lock:
-                            found = search(parent.vault.list(), query, limit=5,
+                            found = search(parent.vault.search_candidates(query), query, limit=5,
                                            session=parent.retained_session)
                         self._reply(200, {"results": [{"id": r["record"]["id"],
                             "title": r["record"]["title"],
