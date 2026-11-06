@@ -32,13 +32,12 @@ def benchmark(records: int) -> dict:
         ids: dict[int, str] = {}
         with Vault(path, PASSWORD, create=True) as vault:
             for i in range(records):
-                ids[i] = vault.add(
-                    f"Project sector{i} milestone{i}",
-                    f"private trialnote{i} projectarchive commonmarker, item {i}."
-                ) if i in selected else vault.add(
+                identifier = vault.add(
                     f"Project sector{i} milestone{i}",
                     f"private trialnote{i} projectarchive commonmarker, item {i}."
                 )
+                if i in selected:
+                    ids[i] = identifier
                 if (i + 1) % 5_000 == 0:
                     print(json.dumps({"inserted": i + 1, "elapsed_s": round(time.perf_counter() - started, 2)}), flush=True)
             insert_s = time.perf_counter() - started
