@@ -1,5 +1,30 @@
 # HingeZero Cross-Constraint Attractor Grid — genuine 1-bit prototype
 
+> **Updated primary experiment:** [Full-field 1-bit associative HingeZero](FULL_FIELD_RESULTS.md).
+> HZ0/HZ8 operate over **all 180 packed binary memories** in the original
+> HingeZero attractor field with **no Hamming shortlist**. Hamming is a control.
+> Tests on authentic FineWeb excerpts showed **no eight-step gain** and an
+> important degradation on 25-word partial cues (50% vs 78.125% top-one).
+> The early Hamming-shortlisted prototype below remains only as historical
+> ablation and must not be presented as native full-field HingeZero.
+
+## Primary full-field benchmark
+
+```bash
+python -m unittest discover -s benchmarks/one-bit-cross-constraint-2026-11-06 -p 'test_*.py' -v
+OPENBLAS_NUM_THREADS=1 python benchmarks/one-bit-cross-constraint-2026-11-06/run_full_field.py --records 180
+OPENBLAS_NUM_THREADS=1 python benchmarks/one-bit-cross-constraint-2026-11-06/real_full_field.py --records 128 --queries 32
+```
+
+Only **memory storage** is packed 1-bit. Dual-tanh needs an ephemeral
+float32 full-field workspace, and the original Core limits the full field
+to at most 256 patterns. No billion-memory or hardware-only result is
+claimed. Exact bitwise opposing constraint masks represent typed Boolean
+evidence supplied to explicit rules; they do not magically discover truth.
+
+## Earlier Hamming-shortlisted ablation (not the primary experiment)
+
+
 **Research prototype, 6 November 2026. Not a clinical, industrial, or emergency safety system.**
 
 This experiment answers a focused question: does adding HingeZero's genuine
