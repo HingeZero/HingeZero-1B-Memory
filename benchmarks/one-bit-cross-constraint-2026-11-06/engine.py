@@ -142,6 +142,22 @@ def make_fixture(count: int = 192) -> tuple[list[Record], list[Challenge]]:
     return records, challenges
 
 
+def constraint_wall(action: str, fact: str) -> bytes:
+    """Permanent 256-bit rule mask for a known externally checked condition."""
+    if CONFLICT_FACT.get(action) != fact:
+        raise ValueError("Unknown or mismatched constraint")
+    return hashlib.shake_256(
+        b"HZ_CONSTRAINT_WALL_V1\\x00" + (action + ":" + fact).encode()
+    ).digest(BYTES)
+
+
+def encode_typed_fact(wall: bytes, value: bool) -> bytes:
+    """safe=wall, conflict=exact complement; does not infer external truth."""
+    if len(wall) != BYTES or type(value) is not bool:
+        raise ValueError("Expected a valid 1-bit wall and Boolean evidence")
+    return bytes((bit ^ 0xFF) if value else bit for bit in wall)
+
+
 def explicit_rule_gate(rec: Record, challenge: Challenge) -> tuple[str, str]:
     """External typed constraints, not a geometric Witness truth oracle."""
     if rec.subject != challenge.subject or rec.action != challenge.action:
@@ -154,8 +170,16 @@ def explicit_rule_gate(rec: Record, challenge: Challenge) -> tuple[str, str]:
         return "REVIEW", "missing_typed_evidence"
     if type(rec.fact_value) is not bool:
         return "REVIEW", "malformed_typed_evidence"
-    return ("BLOCK", "explicit_fact_conflict") if rec.fact_value else (
-        "ALLOW", "explicit_fact_clear")
+    # The complementary state is assembled from typed evidence, rather
+    # than magically emerging from Hamming retrieval or Witness identity.
+    wall = constraint_wall(rec.action, rec.fact_name)
+    observation = encode_typed_fact(wall, rec.fact_value)
+    distance = hamming(wall, observation)
+    if distance == BITS:
+        return "BLOCK", "exact_opposing_1bit_constraint"
+    if distance == 0:
+        return "ALLOW", "same_1bit_constraint"
+    return "REVIEW", "partial_or_corrupted_constraint"
 
 
 def decide(records: list[Record], challenge: Challenge, *,
