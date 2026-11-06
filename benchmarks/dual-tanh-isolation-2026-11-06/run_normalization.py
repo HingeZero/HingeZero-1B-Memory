@@ -121,6 +121,14 @@ def real_conditions(corpus_size, query_count):
              "words":words_count,"source_document_count":len(corpus),
              "source_digest":h.hexdigest(), **m}
         rows.append(row)
+        print("NORMALISATION_REAL_ALL="+json.dumps({
+            "words": words_count, "queries":m["n"],
+            "methods": {name:{
+                "correct":item["correct"],"accuracy":item["accuracy"],
+                "rescues":item["rescues_vs_zero"],
+                "damages":item["damages_vs_zero"]
+            } for name,item in m["methods"].items()}
+        },sort_keys=True),flush=True)
         variants=["zero","tanh__l1_original__p1",
                   "dual45__l1_original__p1","dual45__l2_scaled__p1",
                   "dual45__fixed_response_bound__p1",
