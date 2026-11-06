@@ -30,3 +30,7 @@ jobs:
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
         run: PYTHONUNBUFFERED=1 python benchmarks/real_fineweb.py --records 10000 --queries 100 --max-chars 1200 --progress 2000
+      - name: Cross-shard retrieval across four actual encrypted FineWeb shards
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: PYTHONUNBUFFERED=1 python benchmarks/real_fineweb.py --records 1000 --queries 12 --max-chars 1200 --progress 500 --shard-dir "${RUNNER_TEMP}/hz-fineweb-real-shards" --shard-size 250
