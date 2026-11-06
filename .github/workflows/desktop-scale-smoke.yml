@@ -1,0 +1,32 @@
+name: Desktop real encrypted record scale smoke
+
+on:
+  push:
+    branches:
+      - test/desktop-scale-25001-2026-11-06
+    paths:
+      - 'desktop/benchmarks/scale_indexed_vault.py'
+      - '.github/workflows/desktop-scale-smoke.yml'
+      - 'desktop/hzdesktop/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scale-test:
+    name: Store and retrieve 25001 real encrypted records
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install actual desktop runtime dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Test 25001 encrypted records, indexed recall, witness, restart, deletion
+        run: PYTHONUNBUFFERED=1 python benchmarks/scale_indexed_vault.py --records 25001
