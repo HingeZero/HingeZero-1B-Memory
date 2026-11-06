@@ -20,6 +20,7 @@ from urllib.parse import urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from hzdesktop.retrieval import search, tokens
 from hzdesktop.vault import Vault
+from sharded_vault import ShardedVault
 
 DATASET = "HuggingFaceFW/fineweb"
 CONFIG = "sample-10BT"
@@ -63,8 +64,12 @@ def main(args):
         raise ValueError("queries must be 1..records")
     if args.records >= 100_000 and not args.confirm_large_run:
         raise ValueError("Large jobs require --confirm-large-run and persistent storage")
-    if args.records >= 100_000 and not args.vault:
-        raise ValueError("For large jobs specify an existing large volume with --vault")
+    if args.records >= 100_000 and not (args.vault or args.shard_dir):
+        raise ValueError("For large jobs specify an external volume with --vault or --shard-dir")
+    if args.records >= 1_000_000 and not args.shard_dir:
+        raise ValueError("Runs at or above 1M records require --shard-dir, not one giant SQLite file")
+    if args.vault and args.shard_dir:
+        raise ValueError("Choose --vault or --shard-dir, not both")
     if args.records > 1_000_000 and args.config == "sample-10BT":
         raise ValueError("The sample-10BT subset is insufficient for 1B: use --config default")
     if not 400 <= args.max_chars <= 10_000:
@@ -72,7 +77,7 @@ def main(args):
     t0 = time.perf_counter()
     tmp = tempfile.TemporaryDirectory(prefix="hz-real-") if not args.vault else None
     try:
-        path = Path(args.vault) if args.vault else Path(tmp.name) / "fineweb.sqlite3"
+        path = Path(args.shard_dir or args.vault) if (args.shard_dir or args.vault) else Path(tmp.name) / "fineweb.sqlite3"
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists() and not args.resume:
             raise FileExistsError("Vault exists: add --resume to continue, never overwrite")
@@ -80,7 +85,10 @@ def main(args):
         counted = 0
         seen_source_ids = set() if args.records <= 100_000 else None
         source_hash = hashlib.sha256()
-        with Vault(path, PASSWORD, create=not path.exists()) as vault:
+        storage = (ShardedVault(path, PASSWORD, shard_size=args.shard_size,
+                                create=not path.exists()) if args.shard_dir
+                   else Vault(path, PASSWORD, create=not path.exists()))
+        with storage as vault:
             existing = vault.count()
             if existing >= args.records:
                 raise ValueError("Vault already meets the requested target, nothing to ingest")
@@ -125,12 +133,24 @@ def main(args):
                 raise RuntimeError(f"Source exhausted after {counted}; target was {args.records}")
             insert_s = time.perf_counter() - t0
             reports = []
+            if args.shard_dir:
+                all_queries = [phrase for sample in samples.values()
+                               for phrase in sample["queries"]]
+                batch_start = time.perf_counter()
+                cached = vault.batch_candidates(all_queries)
+                batch_ms = (time.perf_counter() - batch_start) * 1000
+            else:
+                cached, batch_ms = {}, 0.0
             for position, sample in samples.items():
                 exact, missing = sample["queries"]
                 for label, phrase in [("verbatim_evidence", exact), ("half_terms_removed", missing)]:
-                    start = time.perf_counter()
-                    candidates = vault.search_candidates(phrase)
-                    candidate_ms = (time.perf_counter()-start)*1000
+                    if args.shard_dir:
+                        candidates = cached[phrase]
+                        candidate_ms = batch_ms / max(1, len(cached))
+                    else:
+                        start = time.perf_counter()
+                        candidates = vault.search_candidates(phrase)
+                        candidate_ms = (time.perf_counter()-start)*1000
                     for steps in (0, 8):
                         start = time.perf_counter()
                         ranked = search(candidates, phrase, steps=steps)
@@ -148,10 +168,12 @@ def main(args):
                             "core_rerank_ms": round(query_ms, 3),
                             "source_id_sha256": sample["source_id_sha256"],
                         })
-            sizes = path.stat().st_size
+            sizes = vault.bytes_on_disk() if args.shard_dir else path.stat().st_size
             count = vault.count()
         t = time.perf_counter()
-        with Vault(path, PASSWORD) as vault:
+        reopened = (ShardedVault(path, PASSWORD, shard_size=args.shard_size, create=False)
+                    if args.shard_dir else Vault(path, PASSWORD))
+        with reopened as vault:
             reopened_ms = round((time.perf_counter()-t)*1000, 3)
             assert vault.count() == count
             first = next(iter(samples.values()))
@@ -174,6 +196,10 @@ def main(args):
             "dataset": DATASET, "config": args.config, "revision": REVISION,
             "existing_records_at_start": existing,
             "record_type": "authentic webpage text excerpts, not entire documents",
+            "storage": "sharded encrypted SQLite" if args.shard_dir else "single encrypted SQLite",
+            "shards": len(storage.paths) if args.shard_dir else 1,
+            "shard_size": args.shard_size if args.shard_dir else None,
+            "sharded_lookup_ms_are_amortized": bool(args.shard_dir),
             "max_chars_per_excerpt": args.max_chars,
             "actual_encrypted_records": count,
             "target_1b_reached": count == 1_000_000_000,
@@ -199,6 +225,8 @@ if __name__ == "__main__":
     p.add_argument("--records", type=int, default=1000)
     p.add_argument("--config", choices=("sample-10BT", "default"), default="sample-10BT")
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--shard-dir", type=str, help="Fresh/restartable sharded data directory on a large mounted volume")
+    p.add_argument("--shard-size", type=int, default=250_000)
     p.add_argument("--queries", type=int, default=40)
     p.add_argument("--max-chars", type=int, default=1200)
     p.add_argument("--progress", type=int, default=500)
