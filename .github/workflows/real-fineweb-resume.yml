@@ -20,13 +20,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r requirements.txt 'datasets>=3.6,<5' 'huggingface_hub>=0.28'
+      - run: python -m pip install -r requirements.txt
+      - name: Fetch 180 authentic FineWeb rows once via its public REST dataset server
+        run: python benchmarks/fetch_fineweb_rows.py --rows 180 --output "${RUNNER_TEMP}/fineweb.jsonl"
       - name: First real-source segment
-        run: python benchmarks/real_fineweb.py --records 40 --queries 5 --shard-dir "${RUNNER_TEMP}/resume-shards" --shard-size 20 --out "${RUNNER_TEMP}/part40.json"
+        run: python benchmarks/real_fineweb.py --source-jsonl "${RUNNER_TEMP}/fineweb.jsonl" --records 40 --queries 5 --shard-dir "${RUNNER_TEMP}/resume-shards" --shard-size 20 --out "${RUNNER_TEMP}/part40.json"
       - name: Resume without replacing earlier encrypted shards
-        run: python benchmarks/real_fineweb.py --records 80 --queries 5 --shard-dir "${RUNNER_TEMP}/resume-shards" --shard-size 20 --resume --out "${RUNNER_TEMP}/resume80.json"
+        run: python benchmarks/real_fineweb.py --source-jsonl "${RUNNER_TEMP}/fineweb.jsonl" --records 80 --queries 5 --shard-dir "${RUNNER_TEMP}/resume-shards" --shard-size 20 --resume --out "${RUNNER_TEMP}/resume80.json"
       - name: One-shot reference run on the same public source
-        run: python benchmarks/real_fineweb.py --records 80 --queries 5 --out "${RUNNER_TEMP}/fresh80.json"
+        run: python benchmarks/real_fineweb.py --source-jsonl "${RUNNER_TEMP}/fineweb.jsonl" --records 80 --queries 5 --out "${RUNNER_TEMP}/fresh80.json"
       - name: Verify full 80-row provenance digest and counts match
         run: |
           python - <<'PY'
