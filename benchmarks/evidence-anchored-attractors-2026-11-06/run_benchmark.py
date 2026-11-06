@@ -25,10 +25,10 @@ import sys
 sys.path.insert(0,str(HERE))
 sys.path.insert(0,str(HERE.parents[1]))
 
+from engine import EvidenceAnchoredAttractors, METHODS
 from operators import (
     AttractorBank, flip, make_correlated_bank, packed_from_text, real_fineweb,
 )
-from engine import EvidenceAnchoredAttractors, METHODS
 
 
 def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
