@@ -55,11 +55,13 @@ class Resolution:
 
 
 class EvidenceAnchoredAttractors:
-    def __init__(self, bank: AttractorBank, topk: int = 5):
+    def __init__(self, bank: AttractorBank, topk: int = 5,
+                 require_initial_top1_agreement: bool = False):
         if not 1 <= topk <= min(32, len(bank.packed)):
             raise ValueError("Invalid corroboration topK")
         self.bank = bank
         self.topk = int(topk)
+        self.require_initial_top1_agreement = bool(require_initial_top1_agreement)
         self.matrix = bank.witness.memories
         if len(bank.witness.field_memories) != len(bank.packed):
             raise AssertionError("Original core must see every stored memory")
@@ -109,6 +111,17 @@ class EvidenceAnchoredAttractors:
         if cue_b is None or not isinstance(cue_b, bytes) or len(cue_b) != BITS // 8:
             return Resolution(None, "REVIEW", False, "missing_corrob_cue", 0., 0., 0.)
         a, b, sa, sb, weights = self._scored(cue_a, cue_b)
+        agreement_anchor = None
+        if self.require_initial_top1_agreement:
+            # STRICT PRE-FLIGHT: do not reinforce an attractor at all unless
+            # the two observed cues already name the same best stored row.
+            # This is an evidence-gate policy, NOT nonlinear discovery.
+            best_a = int(np.argmax(sa))
+            best_b = int(np.argmax(sb))
+            if best_a != best_b or min(float(sa[best_a]), float(sb[best_b])) <= min_consensus:
+                return Resolution(None, "REVIEW", False, "preflight_disagreement",
+                                  0., 0., 0.)
+            agreement_anchor = best_a
         if method == "single_zero":
             query = a
         else:
@@ -127,6 +140,10 @@ class EvidenceAnchoredAttractors:
             return Resolution(None, "REVIEW", False, "witness_identity_failed",
                               0., 0., gap)
         corroboration = float(min(sa[winner], sb[winner]))
+        if agreement_anchor is not None and winner != agreement_anchor:
+            return Resolution(winner, "REVIEW", True,
+                              "refinement_diverged_from_preflight_anchor",
+                              float(scores[winner]), corroboration, gap)
         # The SAME deterministic evidence gate is used on every method.
         # Avoid calling this 'truth verification'. It checks agreement
         # of two hashes against the SAME stored candidate.
