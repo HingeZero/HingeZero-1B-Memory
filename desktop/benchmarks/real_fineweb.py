@@ -106,6 +106,11 @@ def main(args):
                 query = real_query(content)
                 if not query:
                     continue
+                # Include replayed rows in the manifest hash as well, so a
+                # resumed run can be compared against a one-shot source stream.
+                source_hash.update(source_id.encode("utf-8", "replace"))
+                source_hash.update(b"\x00")
+                source_hash.update(hashlib.sha256(content.encode("utf-8")).digest())
                 # Replay the exact ordered, filtered source stream to locate the
                 # next uncommitted row. Correct but expensive at 1B scale.
                 if counted < existing:
@@ -114,9 +119,6 @@ def main(args):
                 # The stored text is an authentic excerpt from an original webpage.
                 hostname = urlsplit(source_url).hostname or "FineWeb document"
                 identifier = vault.add(hostname, content, source_url[:400])
-                source_hash.update(source_id.encode("utf-8", "replace"))
-                source_hash.update(b"\x00")
-                source_hash.update(hashlib.sha256(content.encode("utf-8")).digest())
                 if counted in sample_indices:
                     samples[counted] = {
                         "id": identifier,
