@@ -13,7 +13,8 @@ sys.path.insert(0, str(HERE.parents[1]))
 
 from engine import (BITS, BYTES, Challenge, Record, decide, expected_status,
                     explicit_rule_gate, flip_bits, hamming, make_fixture,
-                    pack_1bit, unpack_for_hinge)
+                    pack_1bit, unpack_for_hinge, constraint_wall,
+                    encode_typed_fact)
 from HingeZero_Core import HingeZeroWitness, HingeZeroState
 
 
@@ -34,6 +35,19 @@ class OneBitConstraintTests(unittest.TestCase):
         self.assertEqual(hamming(original, original), 0)
         self.assertEqual(hamming(original, flip_bits(original, 64, 11)), 64)
         self.assertEqual(float(unpack_for_hinge(original) @ unpack_for_hinge(opposite)), -256.0)
+
+    def test_exact_1bit_rule_walls(self):
+        wall = constraint_wall("activate_motor", "guard_open")
+        self.assertEqual(len(wall), BYTES)
+        clear = encode_typed_fact(wall, False)
+        conflict = encode_typed_fact(wall, True)
+        self.assertEqual(hamming(wall, clear), 0)
+        self.assertEqual(hamming(wall, conflict), BITS)
+        self.assertEqual(hamming(clear, conflict), BITS)
+        with self.assertRaises(ValueError):
+            constraint_wall("activate_motor", "wrong_fact")
+        with self.assertRaises(ValueError):
+            encode_typed_fact(wall, None)
 
     def test_clean_recall_three_methods(self):
         records, cases = make_fixture(60)
