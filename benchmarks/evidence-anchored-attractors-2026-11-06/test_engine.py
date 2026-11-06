@@ -76,6 +76,29 @@ class TwoCueTests(unittest.TestCase):
                              "two_cue_dual_gate")
         self.assertTrue(x.witness_valid)
 
+    def test_strict_preflight_stops_conflict_before_refinement(self):
+        strict=EvidenceAnchoredAttractors(
+            self.bank, topk=5, require_initial_top1_agreement=True)
+        old=strict._refine
+        try:
+            def should_not_refine(*_):
+                raise AssertionError("Refinement executed after clear disagreement")
+            strict._refine=should_not_refine
+            for method in ("two_cue_tanh_gate","two_cue_dual_gate"):
+                result=strict.decide(self.codes[0], self.codes[1], method)
+                self.assertEqual(result.decision, "REVIEW")
+                self.assertEqual(result.reason, "preflight_disagreement")
+        finally:
+            strict._refine=old
+
+    def test_strict_agreement_still_preserves_correct_identity(self):
+        strict=EvidenceAnchoredAttractors(
+            self.bank, topk=5, require_initial_top1_agreement=True)
+        for method in METHODS:
+            result=strict.decide(self.codes[14], self.codes[14], method)
+            self.assertEqual(result.candidate,14)
+            self.assertEqual(result.decision,"ACCEPT")
+
     def test_untrusted_extra_cues_cannot_verify_truth(self):
         # Agreement proves consistency of two retrieved codes, not truth.
         outcome=self.engine.decide(self.codes[4],self.codes[4],
