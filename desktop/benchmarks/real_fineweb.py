@@ -30,19 +30,26 @@ PASSWORD = "public-corpus-only-ephemeral-test-password"
 
 def iter_real_documents(config: str):
     from datasets import load_dataset
+    import gc
     ds = load_dataset(DATASET, name=config, split="train",
                       revision=REVISION, streaming=True)
-    for row in ds:
-        if not isinstance(row, dict):
-            continue
-        body = row.get("text")
-        source_id = row.get("id")
-        source_url = row.get("url")
-        if not isinstance(body, str) or not isinstance(source_id, str):
-            continue
-        if not isinstance(source_url, str):
-            source_url = ""
-        yield source_id, source_url, body
+    try:
+        for row in ds:
+            if not isinstance(row, dict):
+                continue
+            body = row.get("text")
+            source_id = row.get("id")
+            source_url = row.get("url")
+            if not isinstance(body, str) or not isinstance(source_id, str):
+                continue
+            if not isinstance(source_url, str):
+                source_url = ""
+            yield source_id, source_url, body
+    finally:
+        # The HF parquet streamer can keep Arrow-backed resources alive.
+        # Release them before CPython enters interpreter finalization.
+        del ds
+        gc.collect()
 
 
 def real_query(text: str) -> tuple[str, str] | None:
@@ -97,7 +104,8 @@ def main(args):
                                      max(1, args.queries - 1)))
                 for i in range(args.queries)
             }
-            for source_id, source_url, body in iter_real_documents(args.config):
+            document_stream = iter_real_documents(args.config)
+            for source_id, source_url, body in document_stream:
                 if seen_source_ids is not None:
                     if source_id in seen_source_ids:
                         continue
@@ -131,6 +139,12 @@ def main(args):
                     print(json.dumps({"actual_records": counted, "insert_s": round(time.perf_counter()-t0, 2)}), flush=True)
                 if counted == args.records:
                     break
+            # A for-loop exiting by break does not guarantee that the streaming
+            # generator is closed before the interpreter shuts down.
+            document_stream.close()
+            del document_stream
+            import gc
+            gc.collect()
             if counted < args.records:
                 raise RuntimeError(f"Source exhausted after {counted}; target was {args.records}")
             insert_s = time.perf_counter() - t0
