@@ -1,4 +1,4 @@
-# HingeZero Memory Desktop v0.1.6
+# HingeZero Memory Desktop v0.1.7-dev (source preview; published binaries unchanged)
 
 **Private, offline-first memory vault with deterministic associative retrieval.**  
 A standalone desktop integration package for HingeZero Memory, built around the dual-tanh memory operator.
@@ -13,7 +13,7 @@ A standalone desktop integration package for HingeZero Memory, built around the 
 
 **Permissions:** The application never asks for administrator privileges, does not scan your files, uses no analytics or telemetry, and only imports files you select. It writes its encrypted vault under `~/HingeZeroMemory/vault.sqlite3` (your home directory). The local API and Ollama connection are off until you turn them on. It does **not** modify or inject itself into other AI programs.
 
-**Realistic compatibility:** Windows and macOS packages are not signed or notarized in v0.1.6; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
+**Realistic compatibility:** Windows and macOS packages are not signed or notarized in currently published binaries; operating-system warnings are expected, so only download from the verified release and check SHA-256 hashes. Linux one-file binaries depend on glibc compatibility. Users can always run from Python source.
 
 ## What it does
 
@@ -100,7 +100,9 @@ The provided GitHub Actions workflow builds Windows, Linux and macOS standalone 
 
 ## Scope and IP
 
-This is a new *desktop integration* around the HingeZero operator, not the full 1-billion-record disk-scanning research demonstration. The user-friendly app currently stores up to 20,000 encrypted memory chunks with a linear lexical/optional local-embedding candidate search and up to 256 candidates supplied to the original HingeZero Core. It is not a substitute for the billion-record C++ engine or a production multi-tenant server.
+This is a new *desktop integration* around the HingeZero operator, not the full 1-billion-record disk-scanning research demonstration. Published v0.1.6 desktop binaries retain the original 20,000-record limit. This v0.1.7-dev **source branch** removes that fixed cap and adds an HMAC-keyed SQLite lexical candidate index, so searches no longer require decrypting every stored record. A 200-record keyset-paginated browser avoids loading the whole vault. The HingeZero Core still refines a maximum of 256 candidates using the original Witness logic.
+
+**Important:** `MAX_RECORDS = 1_000_000_000` is a software ceiling, NOT an independently demonstrated one-billion-record desktop memory run. No billion-record text vault, lookup latency, semantic recall, disk use, or durability benchmark is supplied. A billion arbitrary text records would consume substantially more space than the 16 GB synthetic 128-bit research bank; index storage can dominate. The lexical index needs overlapping query words and can miss purely semantic matches. Search-token repetition/access patterns are inferable from the encrypted index, despite keyed token hashes. See [SCALING.md](SCALING.md) for migration, limitations, and testing.
 
 **Licence:** See [LICENSE.md](LICENSE.md), [NOTICE.txt](NOTICE.txt), and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md). PolyForm Noncommercial is **source-available, not an OSI-approved open-source licence**. A separate paid written agreement is needed for commercial use.
 
