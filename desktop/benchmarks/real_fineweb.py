@@ -52,6 +52,17 @@ def iter_real_documents(config: str):
         gc.collect()
 
 
+def iter_jsonl(path: str):
+    """Read unmodified official dataset-server rows previously saved to JSONL."""
+    with open(path, encoding="utf-8") as src:
+        for line in src:
+            row = json.loads(line)
+            if not (isinstance(row, dict) and isinstance(row.get("id"), str)
+                    and isinstance(row.get("text"), str)):
+                raise ValueError("Invalid public-source JSONL record")
+            yield row["id"], str(row.get("url") or ""), row["text"]
+
+
 def real_query(text: str) -> tuple[str, str] | None:
     """Contiguous evidence fragment and partial-word-loss version, both sourced."""
     words = tokens(text)
@@ -104,7 +115,8 @@ def main(args):
                                      max(1, args.queries - 1)))
                 for i in range(args.queries)
             }
-            document_stream = iter_real_documents(args.config)
+            document_stream = (iter_jsonl(args.source_jsonl) if args.source_jsonl
+                               else iter_real_documents(args.config))
             for source_id, source_url, body in document_stream:
                 if seen_source_ids is not None:
                     if source_id in seen_source_ids:
@@ -209,7 +221,8 @@ def main(args):
                 }
         result = {
             "status": "PASS" if all(x["all_witness_verified"] for x in reports) else "FAIL",
-            "dataset": DATASET, "config": args.config, "revision": REVISION,
+            "dataset": DATASET, "config": args.config,
+            "revision": "dataset-server snapshot (not pinned)" if args.source_jsonl else REVISION,
             "existing_records_at_start": existing,
             "record_type": "authentic webpage text excerpts, not entire documents",
             "storage": "sharded encrypted SQLite" if args.shard_dir else "single encrypted SQLite",
@@ -240,6 +253,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--records", type=int, default=1000)
     p.add_argument("--config", choices=("sample-10BT", "default"), default="sample-10BT")
+    p.add_argument("--source-jsonl", type=str, help="Actual FineWeb rows downloaded once from dataset server, for small repeatable tests")
     p.add_argument("--resume", action="store_true")
     p.add_argument("--shard-dir", type=str, help="Fresh/restartable sharded data directory on a large mounted volume")
     p.add_argument("--shard-size", type=int, default=250_000)
