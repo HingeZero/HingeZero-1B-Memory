@@ -22,12 +22,16 @@ compared with (1) binary retrieval + rules and (2) HingeZero 0-step + rules?
    - HZ8: original Witness and all **eight** dual-tanh steps.
    This stage adds **no new memories** and never claims the float shortlist is
    still stored as one-bit. The float workspace is temporary.
-3. **Explicit typed constraint gate:** example industrial-style action
-   `activate_motor` conflicts with a fictional `guard_open` flag.
-   Each retrieved record has a subject, action, a specific named rule input
-   and a caller-supplied `provenance_ok` assertion.
-   Wrong subject/action, unknown or missing rules, untrusted claims and
-   malformed evidence return **REVIEW**, never ALLOW.
+3. **Explicit 1-bit geometric constraint gate:** every known fictional
+   action/condition pair maps to a stable, packed **256-bit rule wall**.
+   The validated typed "clear" Boolean is encoded as the matching wall
+   (Hamming distance **0**). A typed contradictory Boolean is encoded as
+   its exact complement (Hamming distance **256**) and returns **BLOCK**.
+   Each retrieved record has a subject, action, named rule input and
+   a caller-supplied `provenance_ok` assertion. Wrong subject/action,
+   unknown or missing rules, untrusted claims and malformed evidence return
+   **REVIEW**, never ALLOW. The complementary mask is *constructed from*
+   the typed input—it does not discover contradictions by itself.
 
 **Key correction:** exact bitwise opposite codes have Hamming distance 256,
 not destructive interference. HingeZero Witness verifies *stored identity*,
