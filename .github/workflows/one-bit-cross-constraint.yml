@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   one-bit-cross-constraint:
-    name: Packed 1-bit Hamming + original HZ0/HZ8 Witness + explicit constraints
+    name: Full-bank 1-bit HingeZero attractors + 0/8-step Witness + Hamming control
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -37,8 +37,24 @@ jobs:
         run: |
           PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/real_text_probe.py \
             --records 128 --queries 24 --max-chars 1200
+      - name: Full-field 1-bit HingeZero retrieval across ALL patterns (no Hamming preselection)
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/run_full_field.py \
+            --records 180 --output /tmp/one_bit_full_field_results.json
+      - name: Original 1-bit Core full-field recall on real FineWeb excerpts
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          PYTHONUNBUFFERED=1 python benchmarks/one-bit-cross-constraint-2026-11-06/real_full_field.py \
+            --records 128 --queries 32
       - name: Upload full independent run metrics for review
         uses: actions/upload-artifact@v4
         with:
           name: one-bit-cross-constraint-results
-          path: /tmp/one_bit_cross_constraint_results.json
+          path: |
+            /tmp/one_bit_cross_constraint_results.json
+            /tmp/one_bit_full_field_results.json
