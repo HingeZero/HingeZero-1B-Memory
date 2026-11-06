@@ -27,9 +27,9 @@ REVISION = "9bb295ddab0e05d785b879661af7260fed5140fc"
 PASSWORD = "public-corpus-only-ephemeral-test-password"
 
 
-def iter_real_documents():
+def iter_real_documents(config: str):
     from datasets import load_dataset
-    ds = load_dataset(DATASET, name=CONFIG, split="train",
+    ds = load_dataset(DATASET, name=config, split="train",
                       revision=REVISION, streaming=True)
     for row in ds:
         if not isinstance(row, dict):
@@ -65,6 +65,8 @@ def main(args):
         raise ValueError("Large jobs require --confirm-large-run and persistent storage")
     if args.records >= 100_000 and not args.vault:
         raise ValueError("For large jobs specify an existing large volume with --vault")
+    if args.records > 1_000_000 and args.config == "sample-10BT":
+        raise ValueError("The sample-10BT subset is insufficient for 1B: use --config default")
     if not 400 <= args.max_chars <= 10_000:
         raise ValueError("max-chars must be 400..10,000")
     t0 = time.perf_counter()
@@ -72,18 +74,22 @@ def main(args):
     try:
         path = Path(args.vault) if args.vault else Path(tmp.name) / "fineweb.sqlite3"
         path.parent.mkdir(parents=True, exist_ok=True)
-        if path.exists():
-            raise FileExistsError("Refusing to overwrite an existing real-data vault")
+        if path.exists() and not args.resume:
+            raise FileExistsError("Vault exists: add --resume to continue, never overwrite")
         samples = {}
-        sample_indices = {
-            int(round((args.records - 1) * i / max(1, args.queries - 1)))
-            for i in range(args.queries)
-        }
         counted = 0
         seen_source_ids = set() if args.records <= 100_000 else None
         source_hash = hashlib.sha256()
-        with Vault(path, PASSWORD, create=True) as vault:
-            for source_id, source_url, body in iter_real_documents():
+        with Vault(path, PASSWORD, create=not path.exists()) as vault:
+            existing = vault.count()
+            if existing >= args.records:
+                raise ValueError("Vault already meets the requested target, nothing to ingest")
+            sample_indices = {
+                existing + int(round((args.records - existing - 1) * i /
+                                     max(1, args.queries - 1)))
+                for i in range(args.queries)
+            }
+            for source_id, source_url, body in iter_real_documents(args.config):
                 if seen_source_ids is not None:
                     if source_id in seen_source_ids:
                         continue
@@ -91,6 +97,11 @@ def main(args):
                 content = body[:args.max_chars].strip()
                 query = real_query(content)
                 if not query:
+                    continue
+                # Replay the exact ordered, filtered source stream to locate the
+                # next uncommitted row. Correct but expensive at 1B scale.
+                if counted < existing:
+                    counted += 1
                     continue
                 # The stored text is an authentic excerpt from an original webpage.
                 hostname = urlsplit(source_url).hostname or "FineWeb document"
@@ -160,7 +171,8 @@ def main(args):
                 }
         result = {
             "status": "PASS" if all(x["all_witness_verified"] for x in reports) else "FAIL",
-            "dataset": DATASET, "config": CONFIG, "revision": REVISION,
+            "dataset": DATASET, "config": args.config, "revision": REVISION,
+            "existing_records_at_start": existing,
             "record_type": "authentic webpage text excerpts, not entire documents",
             "max_chars_per_excerpt": args.max_chars,
             "actual_encrypted_records": count,
@@ -185,6 +197,8 @@ def main(args):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--records", type=int, default=1000)
+    p.add_argument("--config", choices=("sample-10BT", "default"), default="sample-10BT")
+    p.add_argument("--resume", action="store_true")
     p.add_argument("--queries", type=int, default=40)
     p.add_argument("--max-chars", type=int, default=1200)
     p.add_argument("--progress", type=int, default=500)
