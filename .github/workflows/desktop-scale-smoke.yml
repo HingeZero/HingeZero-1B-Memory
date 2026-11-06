@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   scale-test:
-    name: Store and retrieve 25001 real encrypted records
+    name: Store and retrieve 100000 real encrypted records
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
@@ -28,5 +28,5 @@ jobs:
           python-version: '3.12'
       - name: Install actual desktop runtime dependencies
         run: python -m pip install -r requirements.txt
-      - name: Test 25001 encrypted records, indexed recall, witness, restart, deletion
-        run: PYTHONUNBUFFERED=1 python benchmarks/scale_indexed_vault.py --records 25001
+      - name: Test 100000 encrypted records, indexed recall, witness, restart, deletion
+        run: PYTHONUNBUFFERED=1 python benchmarks/scale_indexed_vault.py --records 100000
