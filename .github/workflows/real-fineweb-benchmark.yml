@@ -1,0 +1,36 @@
+name: HingeZero real FineWeb memory benchmark
+on:
+  push:
+    branches:
+      - test/real-fineweb-billion-protocol-2026-11-06
+    paths:
+      - 'desktop/benchmarks/real_fineweb.py'
+      - '.github/workflows/real-fineweb-benchmark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fineweb-real:
+    name: Source-real web text with actual encrypted HingeZero retrieval
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the actual desktop runtime and dataset streamer
+        run: python -m pip install -r requirements.txt 'datasets>=3.6,<5' 'huggingface_hub>=0.28'
+      - name: Fetch real corpus and measure original Core/Witness retrieval
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: PYTHONUNBUFFERED=1 python benchmarks/real_fineweb.py --records 10000 --queries 100 --max-chars 1200 --progress 2000
+      - name: Cross-shard retrieval across four actual encrypted FineWeb shards
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: PYTHONUNBUFFERED=1 python benchmarks/real_fineweb.py --records 1000 --queries 12 --max-chars 1200 --progress 500 --shard-dir "${RUNNER_TEMP}/hz-fineweb-real-shards" --shard-size 250
