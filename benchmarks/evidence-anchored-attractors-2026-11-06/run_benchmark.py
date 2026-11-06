@@ -74,7 +74,10 @@ def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
 
 def real_queries(target_size:int, query_count:int):
     raw=real_fineweb(target_size)
-    engine=EvidenceAnchoredAttractors(AttractorBank([r[2] for r in raw]),topk=5)
+    bank=AttractorBank([r[2] for r in raw])
+    engine=EvidenceAnchoredAttractors(bank,topk=5)
+    strict=EvidenceAnchoredAttractors(
+        bank,topk=5,require_initial_top1_agreement=True)
     picks=sorted(set(round(i*(target_size-1)/(query_count-1))
                      for i in range(query_count)))
     digest=hashlib.sha256()
@@ -101,6 +104,8 @@ def real_queries(target_size:int, query_count:int):
             conflict.append((cue1,conflict_cue,ix,False))
         report.append(evaluate(engine,genuine,f"same_public_webpage_{wordcount}words"))
         report.append(evaluate(engine,conflict,f"conflicting_public_webpages_{wordcount}words"))
+        report.append(evaluate(strict,genuine,f"strict_same_webpage_{wordcount}words"))
+        report.append(evaluate(strict,conflict,f"strict_conflicting_webpages_{wordcount}words"))
     return {"source":"FineWeb sample-10BT actual webpage excerpts",
             "record_count":target_size,"query_count":len(picks),
             "source_digest":digest.hexdigest(),
@@ -128,6 +133,11 @@ def synthetic(seed_count:int):
                 conflict.append((a,flip(bank.packed[j],noise,rng_b),i,False))
             rows.append(evaluate(engine,genuine,f"same_1bit_pattern_{noise}flips_seed{seed}"))
             rows.append(evaluate(engine,conflict,f"different_1bit_patterns_{noise}flips_seed{seed}"))
+            if noise == 80:
+                strict=EvidenceAnchoredAttractors(
+                    bank,topk=5,require_initial_top1_agreement=True)
+                rows.append(evaluate(strict,genuine,f"strict_same_1bit_{noise}flips_seed{seed}"))
+                rows.append(evaluate(strict,conflict,f"strict_different_1bit_{noise}flips_seed{seed}"))
         groups.extend(rows)
     return {"source":"synthetic correlated binary patterns from seeded latent prototypes",
             "groups":groups,"seed_count":len(seeds),
@@ -150,8 +160,18 @@ def decide_verdict(real):
             min(false["two_cue_zero_gate"]["wrongly_accepted"],
                 false["two_cue_tanh_gate"]["wrongly_accepted"])
     )
+    strict_same = next(x for x in real["results"]
+                       if x["condition"] == "strict_same_webpage_25words")
+    strict_conflict = next(x for x in real["results"]
+                           if x["condition"] == "strict_conflicting_webpages_25words")
     return {
         "predeclared_dual_tanh_specific_gain": bool(success),
+        "strict_exploratory_second_gate": {
+            "zero_correct_accepts": strict_same["methods"]["two_cue_zero_gate"]["correctly_accepted"],
+            "dual_correct_accepts": strict_same["methods"]["two_cue_dual_gate"]["correctly_accepted"],
+            "zero_conflicting_pair_accepts": strict_conflict["methods"]["two_cue_zero_gate"]["wrongly_accepted"],
+            "dual_conflicting_pair_accepts": strict_conflict["methods"]["two_cue_dual_gate"]["wrongly_accepted"],
+        },
         "same_source_25word_correct_accepts":{
             "zero":zero["correctly_accepted"],
             "plain_tanh":tanh["correctly_accepted"],
@@ -186,6 +206,7 @@ def main():
         "field":"all packed 1bit stored vectors, temporary float for tanh",
         "candidate_preselection":"none",
         "new_architecture":"cross-cue candidate weighting + matched deterministic review gate",
+        "strict_preflight_conditions":"EXPLORATORY follow-up: require each separate cue to independently select same top1 before any updates",
         "baseline_equivalence":"all methods see both cues and the same review gate",
         "experiment_methods":METHODS,
         "real":real,
