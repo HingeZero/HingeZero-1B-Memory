@@ -1,0 +1,47 @@
+name: Isolated dual-tanh advantage benchmark
+
+on:
+  push:
+    branches:
+      - experiment/dual-tanh-specific-advantage-2026-11-06
+    paths:
+      - 'benchmarks/dual-tanh-isolation-2026-11-06/**'
+      - '.github/workflows/dual-tanh-isolation.yml'
+  pull_request:
+    paths:
+      - 'benchmarks/dual-tanh-isolation-2026-11-06/**'
+      - '.github/workflows/dual-tanh-isolation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dual-tanh-ablation:
+    name: Original dual-tanh vs tanh(h), tanh(2h), alpha .25 and zero
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned numerical dependency
+        run: python -m pip install 'numpy==2.3.5'
+      - name: Test source parity and packed 1-bit full-field isolation
+        run: python -m unittest discover -s benchmarks/dual-tanh-isolation-2026-11-06 -p 'test_*.py' -v
+      - name: Run paired synthetic and genuine FineWeb ablations
+        run: |
+          python benchmarks/dual-tanh-isolation-2026-11-06/run_benchmark.py \
+            --seeds 4 --real-records 128 --real-queries 48 \
+            --output /tmp/dual_tanh_isolation_results.json
+      - name: Upload all settings and raw result summaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-dual-tanh-isolation-results
+          path: /tmp/dual_tanh_isolation_results.json
