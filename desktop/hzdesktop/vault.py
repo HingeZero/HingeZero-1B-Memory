@@ -99,6 +99,7 @@ class Vault:
             raise
         try:
             self._ensure_index()
+            self._record_count = int(self.db.execute("SELECT COUNT(*) FROM records").fetchone()[0])
         except Exception:
             self.db.close()
             raise
@@ -168,6 +169,7 @@ class Vault:
         with self.db:
             self.db.execute("INSERT INTO records VALUES (?, ?)", (record_id, payload))
             self._index_record(record_id, title or "Untitled", content)
+        self._record_count += 1
         return record_id
 
     @synchronized
@@ -231,13 +233,14 @@ class Vault:
 
     @synchronized
     def count(self) -> int:
-        return int(self.db.execute("SELECT COUNT(*) FROM records").fetchone()[0])
+        return self._record_count
 
     @synchronized
     def delete(self, record_id: str) -> None:
         with self.db:
             self.db.execute("DELETE FROM term_index WHERE record_id=?", (record_id,))
-            self.db.execute("DELETE FROM records WHERE id=?", (record_id,))
+            removed = self.db.execute("DELETE FROM records WHERE id=?", (record_id,)).rowcount
+        self._record_count -= removed
 
     @synchronized
     def backup_encrypted(self, destination: str | Path) -> None:
