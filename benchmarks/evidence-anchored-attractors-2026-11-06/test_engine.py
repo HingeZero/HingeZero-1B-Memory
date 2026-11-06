@@ -11,8 +11,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1]))
 
-from operators import AttractorBank, flip, make_correlated_bank, unpack
 from engine import EvidenceAnchoredAttractors, METHODS
+from operators import AttractorBank, flip, make_correlated_bank, unpack
 
 
 class TwoCueTests(unittest.TestCase):
