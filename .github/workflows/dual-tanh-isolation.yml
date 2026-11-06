@@ -40,8 +40,15 @@ jobs:
           python benchmarks/dual-tanh-isolation-2026-11-06/run_benchmark.py \
             --seeds 4 --real-records 128 --real-queries 48 \
             --output /tmp/dual_tanh_isolation_results.json
+      - name: Isolate second tanh response strength from field normalisation
+        run: |
+          python benchmarks/dual-tanh-isolation-2026-11-06/run_normalization.py \
+            --seeds 3 --real-records 128 --real-queries 48 \
+            --output /tmp/dual_tanh_normalization_results.json
       - name: Upload all settings and raw result summaries
         uses: actions/upload-artifact@v4
         with:
           name: original-dual-tanh-isolation-results
-          path: /tmp/dual_tanh_isolation_results.json
+          path: |
+            /tmp/dual_tanh_isolation_results.json
+            /tmp/dual_tanh_normalization_results.json
