@@ -13,9 +13,14 @@ import hashlib
 import json
 import re
 from pathlib import Path
+import sys
 import statistics
 import time
 import numpy as np
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parents[1]))
 
 from operators import (
     AttractorBank, flip, make_correlated_bank, packed_from_text, real_fineweb,
