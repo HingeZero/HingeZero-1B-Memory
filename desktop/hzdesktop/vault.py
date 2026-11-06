@@ -12,13 +12,16 @@ import threading
 from functools import wraps
 import uuid
 
+from .token_index import MAX_QUERY_TERMS, terms, key_for_term
+
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 
 ITERATIONS = 600_000
-MAX_RECORDS = 20_000
+MAX_RECORDS = 1_000_000_000  # Storage-addressing ceiling; 1B real records NOT benchmarked.
+BROWSE_PAGE_SIZE = 200
 MAX_NOTE_LENGTH = 10_000
 
 
@@ -94,6 +97,50 @@ class Vault:
         except Exception:
             self.db.close()
             raise
+        try:
+            self._ensure_index()
+            self._record_count = int(self.db.execute("SELECT COUNT(*) FROM records").fetchone()[0])
+        except Exception:
+            self.db.close()
+            raise
+
+    def _ensure_index(self) -> None:
+        """Upgrade existing v1 vaults without changing their encrypted payloads.
+
+        Interrupted migrations restart from scratch on next unlock; the marker
+        is only committed after every old record has been indexed.
+        """
+        with self.db:
+            self.db.execute(
+                "CREATE TABLE IF NOT EXISTS term_index "
+                "(term BLOB NOT NULL, record_id TEXT NOT NULL, "
+                "PRIMARY KEY (term, record_id)) WITHOUT ROWID"
+            )
+            self.db.execute(
+                "CREATE INDEX IF NOT EXISTS term_index_by_record "
+                "ON term_index(record_id)"
+            )
+            complete = self.db.execute(
+                "SELECT value FROM meta WHERE key='token_index_v1'"
+            ).fetchone()
+            if complete is None:
+                self.db.execute("DELETE FROM term_index")
+                for record_id, payload in self.db.execute(
+                    "SELECT id, payload FROM records"
+                ):
+                    record = json.loads(self._open(payload, record_id.encode("ascii")))
+                    self._index_record(record_id, record["title"], record["content"])
+                self.db.execute(
+                    "INSERT INTO meta(key,value) VALUES (?,?)",
+                    ("token_index_v1", b"complete"),
+                )
+
+    def _index_record(self, record_id: str, title: str, content: str) -> None:
+        self.db.executemany(
+            "INSERT INTO term_index(term, record_id) VALUES (?,?)",
+            ((key_for_term(self.key, word), record_id)
+             for word in terms(title + " " + content))
+        )
 
     def _seal(self, plaintext: bytes, aad: bytes) -> bytes:
         nonce = secrets.token_bytes(12)
@@ -112,7 +159,7 @@ class Vault:
         if not content or len(content) > MAX_NOTE_LENGTH:
             raise ValueError("Memory must be between 1 and 10,000 characters")
         if self.count() >= MAX_RECORDS:
-            raise ValueError("Vault limit reached: 20,000 memories")
+            raise ValueError("Vault record ceiling reached: 1,000,000,000")
         record_id = str(uuid.uuid4())
         raw = json.dumps({"title": title or "Untitled", "content": content,
                           "source": source[:400], "embedding": embedding,
@@ -121,6 +168,8 @@ class Vault:
         payload = self._seal(raw, record_id.encode("ascii"))
         with self.db:
             self.db.execute("INSERT INTO records VALUES (?, ?)", (record_id, payload))
+            self._index_record(record_id, title or "Untitled", content)
+        self._record_count += 1
         return record_id
 
     @synchronized
@@ -133,13 +182,65 @@ class Vault:
         return result
 
     @synchronized
+    def list_recent(self, limit: int = BROWSE_PAGE_SIZE,
+                    before_rowid: int | None = None) -> tuple[list[dict], int | None]:
+        """Keyset-paginated encrypted records; does not decrypt the whole vault."""
+        limit = max(1, min(int(limit), BROWSE_PAGE_SIZE))
+        if before_rowid is not None and before_rowid <= 0:
+            return [], None
+        if before_rowid is None:
+            sql, args = ("SELECT rowid,id,payload FROM records "
+                         "ORDER BY rowid DESC LIMIT ?", (limit + 1,))
+        else:
+            sql, args = ("SELECT rowid,id,payload FROM records "
+                         "WHERE rowid < ? ORDER BY rowid DESC LIMIT ?",
+                         (before_rowid, limit + 1))
+        rows = self.db.execute(sql, args).fetchall()
+        next_cursor = rows[limit - 1][0] if len(rows) > limit else None
+        output = []
+        for _, record_id, payload in rows[:limit]:
+            record = json.loads(self._open(payload, record_id.encode("ascii")))
+            record["id"] = record_id
+            output.append(record)
+        return output, next_cursor
+
+    @synchronized
+    def search_candidates(self, query: str, limit: int = 256) -> list[dict]:
+        """Bounded lexical candidate generation; Witness verifies returned states.
+
+        This does not provide semantic-only matches when words do not overlap.
+        """
+        words = terms(query)[:MAX_QUERY_TERMS]
+        if not words:
+            return []
+        term_ids = [key_for_term(self.key, word) for word in words]
+        placeholders = ",".join("?" for _ in term_ids)
+        sql = ("SELECT record_id, COUNT(*) AS overlap FROM term_index "
+               "WHERE term IN (" + placeholders + ") "
+               "GROUP BY record_id ORDER BY overlap DESC, record_id LIMIT ?")
+        candidates = self.db.execute(sql, (*term_ids, max(1, min(int(limit), 256))))
+        output = []
+        for record_id, _ in candidates.fetchall():
+            row = self.db.execute(
+                "SELECT payload FROM records WHERE id=?", (record_id,)
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("Vault lexical index points to missing record")
+            record = json.loads(self._open(row[0], record_id.encode("ascii")))
+            record["id"] = record_id
+            output.append(record)
+        return output
+
+    @synchronized
     def count(self) -> int:
-        return int(self.db.execute("SELECT COUNT(*) FROM records").fetchone()[0])
+        return self._record_count
 
     @synchronized
     def delete(self, record_id: str) -> None:
         with self.db:
-            self.db.execute("DELETE FROM records WHERE id=?", (record_id,))
+            self.db.execute("DELETE FROM term_index WHERE record_id=?", (record_id,))
+            removed = self.db.execute("DELETE FROM records WHERE id=?", (record_id,)).rowcount
+        self._record_count -= removed
 
     @synchronized
     def backup_encrypted(self, destination: str | Path) -> None:

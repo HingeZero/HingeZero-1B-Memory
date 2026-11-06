@@ -38,7 +38,7 @@ The desktop app works without an AI model or an internet connection. It imports 
 
 The desktop release includes the original Core, Witness verification of stored-state identity and a session-local retaining loop with rollback. Stored notes persist across restarts; retaining-loop checkpoints are session-local.
 
-**Current scope:** up to 20,000 memory chunks, with up to 256 candidates supplied to the Core. Retrieval quality depends on the information, queries and embedding setup. Witness verification checks stored-state identity, not factual truth or answer relevance. Benchmark speeds from other HingeZero configurations are not desktop performance measurements.
+**Current released desktop scope (v0.1.6):** up to 20,000 memory chunks, with up to 256 candidates supplied to the Core. The development source in this branch contains a bounded encrypted lexical index and a higher software record ceiling, but one billion actual desktop text memories have **not** been benchmarked. See [desktop scaling status](desktop/SCALING.md). Retrieval quality depends on the information, queries and embedding setup. Witness verification checks stored-state identity, not factual truth or answer relevance. Benchmark speeds from other HingeZero configurations are not desktop performance measurements.
 
 ## Integrate with your application
 

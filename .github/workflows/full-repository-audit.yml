@@ -1,6 +1,10 @@
 name: HingeZero full repository audit
 
 on:
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/full-repository-audit.yml'
   push:
     branches:
       - desktop-license-v0.1.2

@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from hzdesktop import __version__
-from hzdesktop.vault import Vault
+from hzdesktop.vault import Vault, MAX_RECORDS, BROWSE_PAGE_SIZE
 from hzdesktop.retrieval import search, RetainedMemorySession
 from hzdesktop.importers import extract, chunks, SUPPORTED
 from hzdesktop import ollama
@@ -70,6 +70,9 @@ class MemoryApp:
         self.api = None
         self.events = queue.Queue()
         self.selected = []
+        self.page_cursors = [None]
+        self.page_index = 0
+        self._next_cursor = None
         self.retained_session = RetainedMemorySession()
         self.use_ollama = tk.BooleanVar(value=False)
         self.embed_model = tk.StringVar(value="embeddinggemma")
@@ -100,6 +103,8 @@ class MemoryApp:
         toolbar = ttk.Frame(memory_tab)
         toolbar.pack(fill="x", pady=3)
         ttk.Button(toolbar, text="Add memory", command=self.add_note).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Previous page", command=self.previous_page).pack(side="right", padx=3)
+        ttk.Button(toolbar, text="Next page", command=self.next_page).pack(side="right", padx=3)
         ttk.Button(toolbar, text="Import selected file", command=self.import_file).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Delete selected", command=self.delete).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Encrypted backup", command=self.backup).pack(side="right", padx=3)
@@ -160,12 +165,37 @@ class MemoryApp:
         widget.configure(state="disabled")
 
     def refresh(self):
-        self.selected = self.vault.list()
+        self.page_cursors = [None]
+        self.page_index = 0
+        self.load_page()
+
+    def load_page(self):
+        self.selected, self._next_cursor = self.vault.list_recent(
+            BROWSE_PAGE_SIZE, before_rowid=self.page_cursors[self.page_index])
         self.results.delete(0, "end")
         for rec in self.selected:
             self.results.insert("end", f"{rec['title']}   · {rec['source']}")
-        self.status.set(f"{len(self.selected)} encrypted memory chunks · offline")
+        self.status.set(
+            f"{self.vault.count():,} encrypted memory chunks · "
+            f"page {self.page_index + 1} · offline"
+        )
         self.set_text(self.preview, "Select a memory to view its stored evidence.")
+
+    def next_page(self):
+        if self._next_cursor is None:
+            return
+        if len(self.page_cursors) <= self.page_index + 1:
+            self.page_cursors.append(self._next_cursor)
+        self.page_index += 1
+        self.query.set("")
+        self.load_page()
+
+    def previous_page(self):
+        if self.page_index == 0:
+            return
+        self.page_index -= 1
+        self.query.set("")
+        self.load_page()
 
     def show_selected(self, *_):
         if self.results.curselection():
@@ -182,7 +212,7 @@ class MemoryApp:
                 model = ollama.valid_model(self.embed_model.get())
                 self.status.set("Computing local query embedding…")
                 self.work(lambda: ollama.embed(model, question),
-                          lambda vec: self.display_results(search(self.vault.list(), question,
+                          lambda vec: self.display_results(search(self.vault.search_candidates(question), question,
                                           query_embedding=vec, embedding_model=model,
                                           session=self.retained_session)))
                 return
@@ -221,7 +251,7 @@ class MemoryApp:
         try:
             text = extract(path)
             segments = chunks(text)
-            if self.vault.count() + len(segments) > 20_000:
+            if self.vault.count() + len(segments) > MAX_RECORDS:
                 raise ValueError("Insufficient vault record capacity")
             if not messagebox.askyesno("Confirm file import",
                      f"Import {len(segments)} encrypted memory chunks from:\n{Path(path).name}?\n\n"
