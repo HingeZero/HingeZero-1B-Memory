@@ -116,6 +116,36 @@ from geometry alone. Witness is an exact stored-state integrity check,
 not a truth oracle. A system that sends everything to REVIEW avoids false
 ACCEPT but is also unusable; **coverage is an essential metric**.
 
+## 7 November 2026 follow-up: preserve supported initial selections
+
+This is a **new experimental change** to the gated tanh and dual-tanh modes,
+not to the original HingeZero Core or the ungated eight-step controls.
+**The tables above describe the prior, unprotected 6 November implementation;
+do not cite them as post-change measurements.**
+
+- The engine now evaluates both cue scores and the zero-step combined score
+  *before* calling the nonlinear update.
+- If both cues and the combined query have the same unique top-1 identity,
+  both cue scores exceed the minimum consensus, and their score gaps are
+  positive (with an optional larger combined margin), the gated modes
+  **preserve the zero-step query geometry and return without refinement**.
+- If those conditions fail, existing gated refinement and REVIEW policies
+  remain available; strict initial-cue disagreement still causes immediate
+  REVIEW before refinement.
+- This rule protects a supported stored-*identity* hypothesis, not a
+  guaranteed correct or truthful memory. A mutually wrong two-cue match
+  can still pass, and no source-trust validation is performed.
+- `preserve_supported_initial=False` supplies a directly comparable
+  unprotected experimental control; `min_initial_margin` configures the
+  minimum combined top-1 score gap (default 0).
+- Benchmark outputs now include `preserved_zero_step_count` for each method
+  and condition so actual bypass frequency is independently inspectable.
+
+The original dual-tanh equation remains unchanged. Skipping an unnecessary
+update is an explicit *decision-layer policy*, not a proved intrinsic
+fixed-point property of that equation. Confirm actual accuracy/coverage,
+false acceptance and latency on fresh data before claiming improvement.
+
 ## Reproduce
 
 Research branch includes the original dual-tanh isolation files from
