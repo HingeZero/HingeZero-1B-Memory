@@ -107,6 +107,84 @@ class TwoCueTests(unittest.TestCase):
         self.assertEqual(outcome.reason,"two_cues_support_same_stored_pattern")
         self.assertNotIn("truth",outcome.reason)
 
+    def test_supported_noisy_memory_is_preserved_before_refinement(self):
+        # A noisy query differs geometrically from its correct stored row.
+        cue_a = flip(self.codes[12], 12, np.random.default_rng(812))
+        cue_b = flip(self.codes[12], 16, np.random.default_rng(813))
+        a, b, sa, sb, _ = self.engine._scored(cue_a, cue_b)
+        query = (a+b)/np.linalg.norm(a+b)
+        self.assertIsNone(self.bank.witness._stored_index(query))
+        self.assertEqual(int(np.argmax(sa)), 12)
+        self.assertEqual(int(np.argmax(sb)), 12)
+        expected = self.engine.decide(cue_a, cue_b, "two_cue_zero_gate")
+        self.assertEqual(expected.candidate, 12)
+        original = self.engine._refine
+        try:
+            def forbidden(*_args):
+                raise AssertionError("Refined an already-supported attractor")
+            self.engine._refine = forbidden
+            for method in ("two_cue_tanh_gate", "two_cue_dual_gate"):
+                result = self.engine.decide(cue_a, cue_b, method)
+                self.assertTrue(result.preserved_initial, method)
+                self.assertTrue(result.witness_valid)
+                self.assertEqual(result.candidate, expected.candidate)
+                self.assertEqual(result.decision, "ACCEPT")
+        finally:
+            self.engine._refine = original
+
+    def test_disagreeing_cues_still_reach_refinement_in_loose_mode(self):
+        # The stronger preservation check must not silently accept conflict.
+        first, second = self.codes[0], self.codes[1]
+        _, _, sa, sb, _ = self.engine._scored(first, second)
+        self.assertNotEqual(int(np.argmax(sa)), int(np.argmax(sb)))
+        original = self.engine._refine
+        calls = []
+        try:
+            def tracking(query, weights, mode):
+                calls.append(mode)
+                return query
+            self.engine._refine = tracking
+            for method in ("two_cue_tanh_gate", "two_cue_dual_gate"):
+                result = self.engine.decide(first, second, method)
+                self.assertFalse(result.preserved_initial)
+            self.assertEqual(calls, ["two_cue_tanh_gate", "two_cue_dual_gate"])
+        finally:
+            self.engine._refine = original
+
+    def test_support_threshold_and_legacy_control(self):
+        cue_a = flip(self.codes[12], 12, np.random.default_rng(812))
+        cue_b = flip(self.codes[12], 16, np.random.default_rng(813))
+        for kwargs in (
+            {"preserve_supported_initial": False},
+            {"min_initial_margin": 1e6},
+        ):
+            engine = EvidenceAnchoredAttractors(self.bank, topk=5, **kwargs)
+            original = engine._refine
+            calls = []
+            try:
+                def tracking(query, weights, mode):
+                    calls.append(mode)
+                    return query
+                engine._refine = tracking
+                for method in ("two_cue_tanh_gate", "two_cue_dual_gate"):
+                    result = engine.decide(cue_a, cue_b, method)
+                    self.assertFalse(result.preserved_initial)
+                self.assertEqual(len(calls), 2)
+            finally:
+                engine._refine = original
+
+    def test_original_core_controls_never_early_stop(self):
+        code = self.codes[6]
+        for method in ("two_cue_dual_original", "two_cue_tanh_original",
+                       "two_cue_zero", "two_cue_zero_gate"):
+            result = self.engine.decide(code, code, method)
+            self.assertFalse(result.preserved_initial, method)
+
+    def test_margin_config_must_be_valid(self):
+        for margin in (-1., float("nan"), float("inf")):
+            with self.assertRaises(ValueError):
+                EvidenceAnchoredAttractors(self.bank, min_initial_margin=margin)
+
     def test_two_cue_gate_changes_operator(self):
         cue_a=flip(self.codes[12],64,np.random.default_rng(12))
         cue_b=flip(self.codes[12],64,np.random.default_rng(13))
