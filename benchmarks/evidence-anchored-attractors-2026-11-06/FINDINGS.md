@@ -143,8 +143,28 @@ do not cite them as post-change measurements.**
 
 The original dual-tanh equation remains unchanged. Skipping an unnecessary
 update is an explicit *decision-layer policy*, not a proved intrinsic
-fixed-point property of that equation. Confirm actual accuracy/coverage,
-false acceptance and latency on fresh data before claiming improvement.
+fixed-point property of that equation.
+
+### Post-change CI results (7 November 2026)
+
+[Verified GitHub Actions run](https://github.com/HingeZero/HingeZero-1B-Memory/actions/runs/42366406778):
+**16 unit tests passed**, including protection of noisy but already agreed
+stored identities, rejection of strict-mode disagreement, preservation of
+ungated original Core behavior, and a control that disables adaptive stopping.
+The same FineWeb benchmark executed successfully.
+
+| Genuine FineWeb condition | Gated dual-tanh queries preserved at 0 steps | Gated dual-tanh raw correct IDs | Two-cue 0-step raw correct IDs |
+| --- | ---: | ---: | ---: |
+| 25-word paired excerpts (64 queries) | 40 / 64 | 62 / 64 | 63 / 64 |
+| 12-word paired excerpts (64 queries) | 13 / 64 | 48 / 64 | 49 / 64 |
+
+For the original loose post-readout gate, 25-word *mixed-page* false
+ACCEPT remained **12/64** for dual-tanh versus **8/64** for zero-step.
+The new stopping policy demonstrably avoids unnecessary refinement on
+some cue pairs but does **not** improve aggregate identity retrieval or
+resolve mistaken acceptance on this small dataset. It is not evidence of
+a HingeZero-specific nonlinear advantage. New test sets and independent
+replication are still needed.
 
 ## Reproduce
 
