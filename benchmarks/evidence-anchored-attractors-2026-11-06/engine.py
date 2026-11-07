@@ -52,16 +52,23 @@ class Resolution:
     score: float
     agreement: float
     margin: float
+    preserved_initial: bool = False  # zero-step support stopped gated refinement
 
 
 class EvidenceAnchoredAttractors:
     def __init__(self, bank: AttractorBank, topk: int = 5,
-                 require_initial_top1_agreement: bool = False):
+                 require_initial_top1_agreement: bool = False,
+                 preserve_supported_initial: bool = True,
+                 min_initial_margin: float = 0.0):
         if not 1 <= topk <= min(32, len(bank.packed)):
             raise ValueError("Invalid corroboration topK")
         self.bank = bank
         self.topk = int(topk)
         self.require_initial_top1_agreement = bool(require_initial_top1_agreement)
+        self.preserve_supported_initial = bool(preserve_supported_initial)
+        if not math.isfinite(min_initial_margin) or min_initial_margin < 0:
+            raise ValueError("min_initial_margin must be finite and nonnegative")
+        self.min_initial_margin = float(min_initial_margin)
         self.matrix = bank.witness.memories
         if len(bank.witness.field_memories) != len(bank.packed):
             raise AssertionError("Original core must see every stored memory")
@@ -77,6 +84,33 @@ class EvidenceAnchoredAttractors:
         # Relative per-candidate competition; not a cryptographic truth test.
         weights = supports / maximum if maximum > 1e-12 else np.zeros_like(supports)
         return a, b, sa, sb, weights
+
+    @staticmethod
+    def _top_margin(scores) -> float:
+        """Gap between highest two scores, with exact ties giving zero."""
+        if len(scores) < 2:
+            return math.inf
+        largest = np.partition(scores, -2)[-2:]
+        return float(largest[1] - largest[0])
+
+    def _supported_before_refinement(self, sa, sb, combined_scores,
+                                     min_consensus: float) -> bool:
+        """Source-identity agreement, NOT factual certainty.
+
+        Both cues and the unrefined combined query must select the same
+        unambiguous stored row with positive support. An optional combined
+        score margin can make this check stricter; no truth labels are used.
+        """
+        best_a = int(np.argmax(sa))
+        best_b = int(np.argmax(sb))
+        best_joint = int(np.argmax(combined_scores))
+        return (
+            best_a == best_b == best_joint
+            and min(float(sa[best_joint]), float(sb[best_joint])) > min_consensus
+            and self._top_margin(sa) > 0.0
+            and self._top_margin(sb) > 0.0
+            and self._top_margin(combined_scores) > self.min_initial_margin
+        )
 
     def _refine(self, query, weights, method):
         x = query.copy()
@@ -128,8 +162,21 @@ class EvidenceAnchoredAttractors:
             query = _unit(a+b)
         if float(np.linalg.norm(query)) <= 1e-12:
             return Resolution(None, "REVIEW", False, "opposing_or_undefined_cues", 0., 0., 0.)
-        x = self._refine(query, weights, method)
-        scores = self.matrix @ x
+        # Gated experimental methods only: don't distort a well-supported
+        # zero-step selection. Original-core and zero-step controls are intact.
+        preserved_initial = False
+        zero_scores = None
+        if self.preserve_supported_initial and method in (
+                "two_cue_tanh_gate", "two_cue_dual_gate"):
+            zero_scores = self.matrix @ query
+            preserved_initial = self._supported_before_refinement(
+                sa, sb, zero_scores, min_consensus)
+        if preserved_initial:
+            x = query
+            scores = zero_scores
+        else:
+            x = self._refine(query, weights, method)
+            scores = self.matrix @ x
         state = self.bank.witness.observe(query, scores)
         valid = bool(self.bank.witness.verify(state))
         winner = int(state.candidate_index)
@@ -138,12 +185,13 @@ class EvidenceAnchoredAttractors:
                if len(top)>1 else math.inf)
         if not valid:
             return Resolution(None, "REVIEW", False, "witness_identity_failed",
-                              0., 0., gap)
+                              0., 0., gap, preserved_initial=preserved_initial)
         corroboration = float(min(sa[winner], sb[winner]))
         if agreement_anchor is not None and winner != agreement_anchor:
             return Resolution(winner, "REVIEW", True,
                               "refinement_diverged_from_preflight_anchor",
-                              float(scores[winner]), corroboration, gap)
+                              float(scores[winner]), corroboration, gap,
+                              preserved_initial=preserved_initial)
         # The SAME deterministic evidence gate is used on every method.
         # Avoid calling this 'truth verification'. It checks agreement
         # of two hashes against the SAME stored candidate.
@@ -151,6 +199,8 @@ class EvidenceAnchoredAttractors:
         rank_b = set(np.argsort(-sb, kind="stable")[:self.topk])
         if winner not in rank_a or winner not in rank_b or corroboration <= min_consensus:
             return Resolution(winner, "REVIEW", True, "insufficient_two_cue_agreement",
-                              float(scores[winner]), corroboration, gap)
+                              float(scores[winner]), corroboration, gap,
+                              preserved_initial=preserved_initial)
         return Resolution(winner, "ACCEPT", True, "two_cues_support_same_stored_pattern",
-                          float(scores[winner]), corroboration, gap)
+                          float(scores[winner]), corroboration, gap,
+                          preserved_initial=preserved_initial)
