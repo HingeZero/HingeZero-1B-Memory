@@ -1,4 +1,10 @@
-# HingeZero Memory
+# HingeZero Memory — Private, Offline AI Long-Term Memory
+
+**Offline AI memory for local assistants:** save notes and documents in an encrypted local vault, retrieve them with HingeZero associative memory, and optionally connect a local Ollama model or other application via a permissioned localhost API. Witness checks stored-state identity; it does **not** establish truth or factual relevance.
+
+**[Download HingeZero Memory (desktop preview)](https://github.com/HingeZero/HingeZero-1B-Memory/releases/latest)** · **[Install and try it](https://github.com/HingeZero/HingeZero-1B-Memory/blob/main/desktop/README.md)** · **[Integrate with a local AI](https://github.com/HingeZero/HingeZero-1B-Memory/blob/main/desktop/README.md#local-api-for-existing-ai-tools)** · **[HingeZero Core](https://github.com/HingeZero/HingeZero-Core)**
+
+**What this repository contains:** the HingeZero Memory desktop developer preview **and** separate research/benchmarking material (including a billion-pattern binary research kit). “1B” in the repository name refers to that research, **not** a demonstrated billion-document capacity for the desktop app. The released desktop preview currently documents up to 20,000 memory chunks.
 
 **Developer quickstart (3 November 2026):** [Connect the existing local encrypted HingeZero vault to an offline Ollama assistant](https://github.com/HingeZero/HingeZero-1B-Memory/tree/main/desktop/local-ollama-demo). Includes a small localhost-only Python client and nine tested simulated-service checks. This is an opt-in developer preview, not a new signed desktop release.
 
