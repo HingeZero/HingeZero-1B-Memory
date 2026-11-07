@@ -1,0 +1,46 @@
+name: Evidence-anchored 1-bit HingeZero attractor experiment
+
+on:
+  push:
+    branches:
+      - experiment/evidence-anchored-attractors-2026-11-06
+    paths:
+      - 'benchmarks/evidence-anchored-attractors-2026-11-06/**'
+      - '.github/workflows/evidence-anchored-attractors.yml'
+  pull_request:
+    paths:
+      - 'benchmarks/evidence-anchored-attractors-2026-11-06/**'
+      - '.github/workflows/evidence-anchored-attractors.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-anchored:
+    name: Full 1-bit attractor field, corroboration vs contradiction
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'numpy==2.3.5'
+      - name: Test exact original Core parity, packed bits, no target leakage, fail-closed contradictory observations
+        run: python -m unittest discover -s benchmarks/evidence-anchored-attractors-2026-11-06 -p 'test_*.py' -v
+      - name: Evaluate identical cues across zero, tanh and dual-tanh guarded and unguarded controls
+        run: |
+          python benchmarks/evidence-anchored-attractors-2026-11-06/run_benchmark.py \
+            --records 128 --queries 64 --seeds 3 \
+            --output /tmp/evidence_anchored_attractor_results.json
+      - name: Upload full metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-anchored-1bit-results
+          path: /tmp/evidence_anchored_attractor_results.json
