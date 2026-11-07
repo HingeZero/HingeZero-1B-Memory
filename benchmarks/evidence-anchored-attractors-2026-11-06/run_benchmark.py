@@ -35,7 +35,7 @@ def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
              name: str) -> dict:
     out={"condition":name,"cases":len(cases),"methods":{}}
     for mode in METHODS:
-        exact=accepted=correct_accepts=wrong_accepts=reviews=valid=preflight_holds=0
+        exact=accepted=correct_accepts=wrong_accepts=reviews=valid=preflight_holds=preserved=0
         mean=[]
         for primary,second,target,is_consistent in cases:
             t0=time.perf_counter_ns()
@@ -49,6 +49,8 @@ def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
                 preflight_holds+=1
             else:
                 raise AssertionError("Original Witness failed to verify a selected state")
+            if pred.preserved_initial:
+                preserved+=1
             if pred.candidate==target:
                 exact+=1
             if pred.decision=="ACCEPT":
@@ -69,6 +71,7 @@ def evaluate(engine, cases: list[tuple[bytes, bytes, int, bool]],
             "accepted_precision":correct_accepts/accepted if accepted else None,
             "witness_valid_count":valid,
             "preflight_hold_count":preflight_holds,
+            "preserved_zero_step_count":preserved,
             "mean_ms":round(statistics.mean(mean),4),
         }
         if valid+preflight_holds!=len(cases):
