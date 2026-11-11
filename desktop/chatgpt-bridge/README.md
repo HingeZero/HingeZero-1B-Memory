@@ -5,6 +5,7 @@ Compatible with HingeZero Memory Desktop v0.1.5 or later.
 
 | Tool | Purpose | Availability |
 | --- | --- | --- |
+| `memory_status()` | Check the live local vault API without returning note contents | Default, read-only |
 | `memory_search(query)` | Retrieve up to five saved notes | Default, read-only |
 | `memory_remember(title, content)` | Add one user-approved note for future conversations | Explicit local write opt-in only |
 
@@ -14,6 +15,20 @@ Repeated saves create separate notes; check the vault before retrying.
 
 This adds saving to the v0.1.5 bridge. It does not automatically capture chats
 or change ChatGPT's built-in memory. The AI must call the tools.
+
+## ChatGPT availability and connection boundaries
+
+Custom MCP servers require a supported ChatGPT workspace, its permissions,
+and a running Secure MCP Tunnel. As of November 2026, ChatGPT documentation
+lists self-service custom MCP server access on Business and Enterprise/Edu web
+workspaces; a personal Plus account cannot simply add this integration to an
+existing conversation. Check the current [ChatGPT support article](https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt).
+
+This bridge does not create a ChatGPT app, tunnel ID, workspace authorization,
+or a live connection on its own. No tool access should be claimed until
+ChatGPT successfully invokes `memory_status()`. `memory_status()` only checks
+that the local desktop API responds; it does not check writing or persistence.
+Never share vault tokens, tunnel runtime API keys, or your passphrase in chat.
 
 ## Start on your laptop
 
@@ -40,8 +55,9 @@ or change ChatGPT's built-in memory. The AI must call the tools.
    Keep the helper and unlocked desktop vault running.
 
 To check local search without configuring a tunnel, run
-`python connect.py --check-only`. This does not test saving or prove ChatGPT
-is connected.
+`python connect.py --check-only`. This asks only for the read-only token;
+it does not request write permissions, test saving, or prove ChatGPT is
+connected.
 
 ## One-time OpenAI account setup
 
@@ -69,7 +85,8 @@ Use synthetic information first:
 2. Confirm the actual tool result has `status: saved` and check the note in the
    desktop vault. A conversational “I'll remember” without a tool call is not
    evidence of a HingeZero save.
-3. Open a new chat, select the same plugin and ask: “Use HingeZero memory_search
+3. In ChatGPT, first call `memory_status()` and confirm `status=ready`. Open a
+   new chat, select the same plugin and ask: “Use HingeZero memory_search
    to find the saved Cedar project demo time.”
 4. Confirm the tool retrieves the original note and the AI answers from it.
 5. To test persistence, close the helper/API and desktop vault, reopen the vault,

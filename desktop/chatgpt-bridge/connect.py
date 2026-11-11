@@ -27,7 +27,9 @@ def main(argv=None) -> int:
         env.pop(name, None)
     env["HINGEZERO_API_PORT"] = input("Local API port: ").strip()
     env["HINGEZERO_READ_TOKEN"] = getpass("Read-only desktop token (hidden): ").strip()
-    save = input("Allow this bridge to save notes you request? [y/N]: ").strip().lower()
+    save = ""
+    if not args.check_only:
+        save = input("Allow this bridge to save notes you request? [y/N]: ").strip().lower()
     if save in ("y", "yes"):
         env["HINGEZERO_WRITE_TOKEN"] = getpass("Desktop full-access token (local only, hidden): ").strip()
         env["HINGEZERO_ENABLE_WRITES"] = "1"

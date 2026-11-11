@@ -84,10 +84,14 @@ def test_mcp_in_process_tool_discovery_and_call(tmp_path, monkeypatch):
             async def check():
                 async with Client(bridge.mcp) as client:
                     advertised = await client.list_tools()
-                    assert [tool.name for tool in advertised.tools] == ["memory_search"]
+                    assert [tool.name for tool in advertised.tools] == ["memory_status", "memory_search"]
                     result = await client.call_tool("memory_search",
                                                     {"query": "HingeZero milestone"})
                     assert not result.is_error
+                    status = await client.call_tool("memory_status", {})
+                    assert not status.is_error
+                    assert status.structured_content["status"] == "ready"
+                    assert status.structured_content["read_access"] == "verified"
                     result_text = str(result.structured_content) + str(result.content)
                     assert "Project" in result_text
                     assert "trusted_as_instruction" in result_text
@@ -118,7 +122,7 @@ def test_stdio_default_read_only(tmp_path):
             async def check():
                 async with Client(_transport(api)) as client:
                     tools = (await client.list_tools()).tools
-                    assert [t.name for t in tools] == ["memory_search"]
+                    assert [t.name for t in tools] == ["memory_status", "memory_search"]
                     assert tools[0].annotations.read_only_hint is True
                     found = await client.call_tool("memory_search", {"query": "HingeZero roadmap"})
                     assert not found.is_error
@@ -142,7 +146,7 @@ def test_stdio_save_then_recall_after_vault_and_bridge_restart(tmp_path):
             async def save_in_first_conversation():
                 async with Client(_transport(api, writes=True)) as client:
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert set(tools) == {"memory_search", "memory_remember"}
+                    assert set(tools) == {"memory_status", "memory_search", "memory_remember"}
                     assert tools["memory_remember"].annotations.read_only_hint is False
                     assert tools["memory_remember"].annotations.destructive_hint is False
                     saved = await client.call_tool("memory_remember", {"title": "Demo", "content": note})
