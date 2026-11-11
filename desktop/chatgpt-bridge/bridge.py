@@ -112,6 +112,26 @@ def search_local(query: str) -> dict:
     }
 
 
+def memory_status() -> dict[str, Any]:
+    """Check that the bridge can read the local vault without exposing notes.
+
+    This verifies the currently unlocked desktop API, not a ChatGPT account
+    connection, write-token permissions, or the accuracy of stored memories.
+    """
+    write_access = "configured_not_verified" if _writes_enabled() else "disabled"
+    try:
+        result = _request("/v1/search", {"query": "HingeZero bridge connection check"})
+        if not isinstance(result.get("results"), list):
+            raise RuntimeError("Unexpected local API response")
+    except (RuntimeError, ValueError) as exc:
+        return {"status": "unavailable", "read_access": "not_verified",
+                "write_access": write_access, "detail": str(exc)}
+    return {"status": "ready", "read_access": "verified",
+            "write_access": write_access,
+            "detail": "Desktop API responded; no memory contents were returned. "
+                      "Cross-session recall requires a separate save and reopen test."}
+
+
 def memory_search(query: str) -> dict[str, Any]:
     """Use when the user asks to recall information previously saved in HingeZero.
 
@@ -145,6 +165,7 @@ def memory_remember(title: str, content: str) -> dict[str, Any]:
 
 def create_server() -> MCPServer:
     server = MCPServer("HingeZero Memory")
+    server.tool(annotations=READ_ANNOTATIONS, structured_output=True)(memory_status)
     server.tool(annotations=READ_ANNOTATIONS, structured_output=True)(memory_search)
     if _writes_enabled():
         _write_settings()
@@ -158,8 +179,12 @@ mcp = create_server()
 if __name__ == "__main__":
     _settings()
     if sys.argv[1:] == ["--check"]:
-        search_local("HingeZero bridge connection check")
-        print(json.dumps({"status": "local_api_reachable", "write_enabled": _writes_enabled(),
+        check = memory_status()
+        if check["status"] != "ready":
+            raise RuntimeError(check["detail"])
+        print(json.dumps({"status": "local_api_reachable",
+                          "read_access": check["read_access"],
+                          "write_access": check["write_access"],
                           "chatgpt_connection_verified": False}))
     elif sys.argv[1:]:
         raise SystemExit("Usage: python bridge.py [--check]")
