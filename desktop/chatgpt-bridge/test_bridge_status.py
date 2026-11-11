@@ -3,7 +3,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-from unittest import TestCase
+from unittest import SkipTest, TestCase
 from unittest.mock import patch
 
 
@@ -11,6 +11,8 @@ HERE = Path(__file__).resolve().parent
 
 
 def load_module(name: str, path: str):
+    if path == "bridge.py" and importlib.util.find_spec("mcp") is None:
+        raise SkipTest("Install chatgpt-bridge/requirements.txt to test MCP server")
     spec = importlib.util.spec_from_file_location(name, HERE / path)
     module = importlib.util.module_from_spec(spec)
     with patch.dict(os.environ, {"HINGEZERO_ENABLE_WRITES": ""}):
